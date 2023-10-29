@@ -1,4 +1,4 @@
-package handler
+package hello
 
 import (
   "net/http"
@@ -6,15 +6,7 @@ import (
 
 func Handler(w http.ResponseWriter, r *http.Request) {
 
-  if r.URL.Path == "/hello" {
+  if r.URL.Path == "/v1/hello" {
     w.Write([]byte("Hello from Go in Vercel!"))
-    return
   }
-
-  http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
-}
-
-func handler() {
-  http.HandleFunc("/", Handler)
-  http.ListenAndServe(":8080", nil) 
 }
