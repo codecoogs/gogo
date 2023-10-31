@@ -5,8 +5,5 @@ import (
 )
 
 func Handler(w http.ResponseWriter, r *http.Request) {
-
-  if r.URL.Path == "/v1/hello" {
-    w.Write([]byte("Hello from Go in Vercel!"))
-  }
+  w.Write([]byte("Welcome to Code[Coogs] GoGo v1!"))
 }
