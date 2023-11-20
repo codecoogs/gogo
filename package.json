@@ -1,0 +1,10 @@
+{
+    "scripts": {
+      "setup": "vercel login && vercel link",
+      "start": "vercel dev",
+      "deploy": "vercel deploy"
+    },
+    "dependencies": {
+      "vercel": "^32.5.0"
+    }
+  }
