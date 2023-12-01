@@ -5,13 +5,11 @@ import (
   "net/http"
 	"github.com/codecoogs/gogo/wrappers/http"
 	"github.com/codecoogs/gogo/wrappers/supabase"
-	"github.com/google/uuid"
 )
 
 type Leaderboard struct {
   ID int `json:"id"`
   Name string `json:"name"`
-  Teams uuid.UUID `json:"teams"`
 }
 
 func Handler(w http.ResponseWriter, r *http.Request) {

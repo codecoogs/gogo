@@ -5,7 +5,6 @@ import (
   "net/http"
 	"github.com/codecoogs/gogo/wrappers/http"
 	"github.com/codecoogs/gogo/wrappers/supabase"
-	"github.com/google/uuid"
 )
 
 type Event struct {
@@ -17,8 +16,6 @@ type Event struct {
   Name string `json:"name"`
   Description string `json:"description"`
   Points int `json:"points"`
-  Attending uuid.UUID `json:"attending"`
-  Attended uuid.UUID `json:"attended"`
   Leaderboard *int `json:"leaderboard"`
 }
 
