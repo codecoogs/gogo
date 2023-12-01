@@ -12,8 +12,6 @@ type Team struct {
   ID uuid.UUID `json:"id"`
   Name string `json:"name"`
   Points int `json:"points"`
-  Leads uuid.UUID `json:"leads"`
-  Members uuid.UUID `json:"members"`
 }
 
 func Handler(w http.ResponseWriter, r *http.Request) {
