@@ -33,33 +33,52 @@ func Handler(w http.ResponseWriter, r *http.Request) {
   // TODO:handle error if no id 
   id := r.URL.Query().Get("id")
 
-  switch r.Method {
-  case "GET":
-    var payment []Payment
-    if _, err := client.From("Payment").Select("*", "exact", false).Eq("id", id).ExecuteTo(&payment); err != nil {
-      crw.SendJSONResponse(http.StatusInternalServerError, map[string]string{"message": "Failed to get payment: " + err.Error()})
-      return
-    }
-    crw.SendJSONResponse(http.StatusOK, map[string]interface{}{"data": payment})
-  case "PUT":
-    var updatedPayment Payment
-      if err := json.NewDecoder(r.Body).Decode(&updatedPayment); err != nil {
+  if id == "" {
+    switch r.Method {
+    case "POST":
+      var payment Payment
+      if err := json.NewDecoder(r.Body).Decode(&payment); err != nil {
         crw.SendJSONResponse(http.StatusBadRequest, map[string]string{"message": "Invalid request body: " + err.Error()})
         return
       }
-
-      if _, _, err := client.From("Payment").Update(updatedPayment, "", "exact").Eq("id", id).Execute(); err != nil {
-          crw.SendJSONResponse(http.StatusInternalServerError, map[string]string{"message": "Failed to update payment: " + err.Error()})
+      
+      if _, _, err := client.From("Payment").Insert(payment, false, "", "", "exact").Execute(); err != nil {
+          crw.SendJSONResponse(http.StatusInternalServerError, map[string]string{"message": "Failed to create payment: " + err.Error()})
           return
       }
-      crw.SendJSONResponse(http.StatusOK, map[string]string{"message": "Successfully updated payment with id: " + id})
-  case "DELETE":
-    if _, _, err := client.From("Payment").Delete("", "exact").Eq("id", id).Execute(); err != nil {
-      crw.SendJSONResponse(http.StatusInternalServerError, map[string]string{"message": "Failed to delete payment: " + err.Error()})
-      return
+      crw.SendJSONResponse(http.StatusOK, map[string]string{"message": "Successfully created payment"})
+    default:
+      crw.SendJSONResponse(http.StatusMethodNotAllowed, map[string]string{"message": "Method not allowed for this resource"})
     }
-    crw.SendJSONResponse(http.StatusOK, map[string]string{"message": "Successfully deleted payment with id: " + id})
-  default:
-    crw.SendJSONResponse(http.StatusMethodNotAllowed, map[string]string{"message": "Method not allowed for this resource"})
+  } else {
+    switch r.Method {
+    case "GET":
+      var payment []Payment
+      if _, err := client.From("Payment").Select("*", "exact", false).Eq("id", id).ExecuteTo(&payment); err != nil {
+        crw.SendJSONResponse(http.StatusInternalServerError, map[string]string{"message": "Failed to get payment: " + err.Error()})
+        return
+      }
+      crw.SendJSONResponse(http.StatusOK, map[string]interface{}{"data": payment})
+    case "PUT":
+      var updatedPayment Payment
+        if err := json.NewDecoder(r.Body).Decode(&updatedPayment); err != nil {
+          crw.SendJSONResponse(http.StatusBadRequest, map[string]string{"message": "Invalid request body: " + err.Error()})
+          return
+        }
+
+        if _, _, err := client.From("Payment").Update(updatedPayment, "", "exact").Eq("id", id).Execute(); err != nil {
+            crw.SendJSONResponse(http.StatusInternalServerError, map[string]string{"message": "Failed to update payment: " + err.Error()})
+            return
+        }
+        crw.SendJSONResponse(http.StatusOK, map[string]string{"message": "Successfully updated payment with id: " + id})
+    case "DELETE":
+      if _, _, err := client.From("Payment").Delete("", "exact").Eq("id", id).Execute(); err != nil {
+        crw.SendJSONResponse(http.StatusInternalServerError, map[string]string{"message": "Failed to delete payment: " + err.Error()})
+        return
+      }
+      crw.SendJSONResponse(http.StatusOK, map[string]string{"message": "Successfully deleted payment with id: " + id})
+    default:
+      crw.SendJSONResponse(http.StatusMethodNotAllowed, map[string]string{"message": "Method not allowed for this resource"})
+    }
   }
 }

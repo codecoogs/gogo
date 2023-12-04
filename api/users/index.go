@@ -10,7 +10,6 @@ import (
 
 type User struct {
   ID uuid.UUID `json:"id"`
-  Role string `json:"role"`
   FirstName string `json:"first_name"`
   LastName string `json:"last_name"`
   Email string `json:"email"`
@@ -35,34 +34,53 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 
   id := r.URL.Query().Get("id")
 
-  switch r.Method {
-  case "GET":
-    var user []User
-    if _, err := client.From("User").Select("*", "exact", false).Eq("id", id).ExecuteTo(&user); err != nil {
-      crw.SendJSONResponse(http.StatusInternalServerError, map[string]string{"message": "Failed to get users: " + err.Error()})
-      return
-    }
-    crw.SendJSONResponse(http.StatusOK, map[string]interface{}{"data": user})
-  case "PUT":
-    var updatedUser User
-    if err := json.NewDecoder(r.Body).Decode(&updatedUser); err != nil {
-      crw.SendJSONResponse(http.StatusBadRequest, map[string]string{"message": "Invalid request body: " + err.Error()})
-      return
-    }
-    // TODO: Perform validation checks on updatedUser data
-    
-    if _, _, err := client.From("User").Update(updatedUser, "", "exact").Eq("id", id).Execute(); err != nil {
-        crw.SendJSONResponse(http.StatusInternalServerError, map[string]string{"message": "Failed to update user: " + err.Error()})
+  if id == "" {
+    switch r.Method {
+    case "POST":
+      var user User
+      if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+        crw.SendJSONResponse(http.StatusBadRequest, map[string]string{"message": "Invalid request body: " + err.Error()})
         return
+      }
+      
+      if _, _, err := client.From("User").Insert(user, false, "", "", "exact").Execute(); err != nil {
+          crw.SendJSONResponse(http.StatusInternalServerError, map[string]string{"message": "Failed to create user: " + err.Error()})
+          return
+      }
+      crw.SendJSONResponse(http.StatusOK, map[string]string{"message": "Successfully created user"})
+    default:
+      crw.SendJSONResponse(http.StatusMethodNotAllowed, map[string]string{"message": "Method not allowed for this resource"})
     }
-    crw.SendJSONResponse(http.StatusOK, map[string]string{"message": "Successfully updated user with id: " + id})
-  case "DELETE":
-    if _, _, err := client.From("User").Delete("", "exact").Eq("id", id).Execute(); err != nil {
-      crw.SendJSONResponse(http.StatusInternalServerError, map[string]string{"message": "Failed to delete users: " + err.Error()})
-      return
+  } else {
+    switch r.Method {
+    case "GET":
+      var user []User
+      if _, err := client.From("User").Select("*", "exact", false).Eq("id", id).ExecuteTo(&user); err != nil {
+        crw.SendJSONResponse(http.StatusInternalServerError, map[string]string{"message": "Failed to get users: " + err.Error()})
+        return
+      }
+      crw.SendJSONResponse(http.StatusOK, map[string]interface{}{"data": user})
+    case "PUT":
+      var updatedUser User
+      if err := json.NewDecoder(r.Body).Decode(&updatedUser); err != nil {
+        crw.SendJSONResponse(http.StatusBadRequest, map[string]string{"message": "Invalid request body: " + err.Error()})
+        return
+      }
+      // TODO: Perform validation checks on updatedUser data
+      
+      if _, _, err := client.From("User").Update(updatedUser, "", "exact").Eq("id", id).Execute(); err != nil {
+          crw.SendJSONResponse(http.StatusInternalServerError, map[string]string{"message": "Failed to update user: " + err.Error()})
+          return
+      }
+      crw.SendJSONResponse(http.StatusOK, map[string]string{"message": "Successfully updated user with id: " + id})
+    case "DELETE":
+      if _, _, err := client.From("User").Delete("", "exact").Eq("id", id).Execute(); err != nil {
+        crw.SendJSONResponse(http.StatusInternalServerError, map[string]string{"message": "Failed to delete users: " + err.Error()})
+        return
+      }
+      crw.SendJSONResponse(http.StatusOK, map[string]string{"message": "Successfully deleted user with id: " + id})
+    default:
+      crw.SendJSONResponse(http.StatusMethodNotAllowed, map[string]string{"message": "Method not allowed for this resource"})
     }
-    crw.SendJSONResponse(http.StatusOK, map[string]string{"message": "Successfully deleted user with id: " + id})
-  default:
-    crw.SendJSONResponse(http.StatusMethodNotAllowed, map[string]string{"message": "Method not allowed for this resource"})
   }
 }
