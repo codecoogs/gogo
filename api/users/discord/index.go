@@ -10,8 +10,6 @@ import (
 type UserDiscord struct {
 	Discord *string `json:"discord"`
 }
-var column string
-var value string
 
 func Handler(w http.ResponseWriter, r *http.Request) {
 	crw := &codecoogshttp.ResponseWriter{W: w}
@@ -23,17 +21,22 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var column string
+	var value string
   	id := r.URL.Query().Get("id")
 	email := r.URL.Query().Get("email")
 	if (len(id) > 0 && len(email) > 0) {
-		crw.SendJSONResponse(http.StatusInternalServerError, map[string]string{"message": "Provide either 'id' or 'email', not both"})
+		crw.SendJSONResponse(http.StatusBadRequest, map[string]string{"message": "Provide either 'id' or 'email', not both"})
 		return
 	} else if len(email) > 0 {
 		column = "email"
 		value = email
-	} else {
+	} else if len(id) > 0 {
 		column = "id"
 		value = id
+	} else {
+		crw.SendJSONResponse(http.StatusBadRequest, map[string]string{"message": "Provide 'id' or 'email'"})
+		return
 	}
   
 	switch r.Method {
@@ -50,7 +53,17 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 			crw.SendJSONResponse(http.StatusBadRequest, map[string]string{"message": "Invalid request body: " + err.Error()})
 			return
 		}
-		
+
+		var temp []interface{}
+		if _, err := client.From("User").Select("*", "exact", false).Eq(column, value).ExecuteTo(&temp); err != nil {
+			crw.SendJSONResponse(http.StatusInternalServerError, map[string]string{"message": "Failed to check user existence: " + err.Error()})
+			return
+		}
+		if len(temp) == 0 {
+			crw.SendJSONResponse(http.StatusNotFound, map[string]string{"message": "User with " + column + " '" + value + "' does not exist"})
+			return
+		}	
+
 		if _, _, err := client.From("User").Update(updatedUserDiscord, "", "exact").Eq(column, value).Execute(); err != nil {
 			crw.SendJSONResponse(http.StatusInternalServerError, map[string]string{"message": "Failed to update users discord: " + err.Error()})
 			return
