@@ -103,7 +103,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 
 func getUserDiscordByEmail(client *supabase.Client, email string) (*UserDiscord, error) {
 	var userDiscord []UserDiscord
-	if _, err := client.From("User").Select("*", "exact", false).Eq("email", email).ExecuteTo(&userDiscord); err != nil {
+	if _, err := client.From("User").Select("discord", "exact", false).Eq("email", email).ExecuteTo(&userDiscord); err != nil {
 		return nil, err
 	}
 
