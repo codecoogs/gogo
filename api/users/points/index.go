@@ -40,9 +40,8 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	email := r.URL.Query().Get("email")
 	discordId := r.URL.Query().Get("discordId")
 
-	var column string
-	var value string
-	if id == "" && email == "" && discordId == "" {
+	column, value := getColumnAndValue(id, email, discordId)
+	if column == "" && value == "" {
 		crw.SendJSONResponse(http.StatusBadRequest, Response{
 			Success: false,
 			Error: &ErrorDetails{
@@ -50,18 +49,6 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 			},
 		})
 		return
-	} else if id != "" {
-		column = "id"
-		value = id
-	} else if email != "" {
-		column = "email"
-		value = email
-	} else if discordId != "" {
-		column = "discord"
-		value = discordId
-	} else {
-		column = "id"
-		value = id
 	}
 
 	switch r.Method {
@@ -134,6 +121,18 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 				Message: "Method not allowed for this resource",
 			},
 		})
+	}
+}
+
+func getColumnAndValue(id string, email string, discordId string) (string, string) {
+	if id != "" {
+		return "id", id
+	} else if email != "" {
+		return "email", email
+	} else if discordId != "" {
+		return "discord", discordId
+	} else {
+		return "", ""
 	}
 }
 
