@@ -127,13 +127,14 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 func getColumnAndValue(id string, email string, discordId string) (string, string) {
 	if id != "" {
 		return "id", id
-	} else if email != "" {
+	} 
+	if email != "" {
 		return "email", email
-	} else if discordId != "" {
-		return "discord", discordId
-	} else {
-		return "", ""
 	}
+	if discordId != "" {
+		return "discord", discordId
+	} 
+	return "", ""
 }
 
 func getUserPointsByColumn(client *supabase.Client, column string, value string) (*UserPoints, error) {
