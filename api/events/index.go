@@ -1,14 +1,15 @@
 package events
 
 import (
-  "encoding/json"
-  "net/http"
+	"encoding/json"
+	"net/http"
 	"github.com/codecoogs/gogo/wrappers/http"
 	"github.com/codecoogs/gogo/wrappers/supabase"
+	"github.com/google/uuid"
 )
 
 type Event struct {
-  ID int `json:"id"`
+  ID uuid.UUID `json:"id"`
   Type string `json:"type"`
   StartTime string `json:"start_time"`
   EndTime string `json:"end_time"`
@@ -16,7 +17,7 @@ type Event struct {
   Name string `json:"name"`
   Description string `json:"description"`
   Points int `json:"points"`
-  Leaderboard *int `json:"leaderboard"`
+  Leaderboard *uuid.UUID `json:"leaderboard"`
 }
 
 func Handler(w http.ResponseWriter, r *http.Request) {
