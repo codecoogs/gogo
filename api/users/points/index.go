@@ -9,8 +9,8 @@ import (
 )
 
 type UserPoints struct {
-	FirstName string `json:"firstName"`
-	LastName string `json:"lastName"`
+	FirstName string `json:"first_name,omitempty"`
+	LastName string `json:"last_name,omitempty"`
 	Points int `json:"points"`
 }
 type Response struct {
