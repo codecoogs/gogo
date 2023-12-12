@@ -9,8 +9,6 @@ import (
 )
 
 type UserPoints struct {
-	FirstName string `json:"firstName"`
-	LastName string `json:"lastName"`
 	Points int `json:"points"`
 }
 type Response struct {
@@ -55,7 +53,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 
 	switch r.Method {
 	case "GET":
-		userPoints, err := getNameAndPointsByColumn(client, column, value)
+		userPoints, err := getUserPointsByColumn(client, column, value)
 		if err != nil {
 			crw.SendJSONResponse(http.StatusInternalServerError, Response{
 				Success: false,
@@ -139,9 +137,9 @@ func getColumnAndValue(id string, email string, discordId string) (string, strin
 	return "", ""
 }
 
-func getNameAndPointsByColumn(client *supabase.Client, column string, value string) (*UserPoints, error) {
+func getUserPointsByColumn(client *supabase.Client, column string, value string) (*UserPoints, error) {
 	var userPoints []UserPoints
-	if _, err := client.From("User").Select("first_name, last_name, points", "exact", false).Eq(column, value).ExecuteTo(&userPoints); err != nil {
+	if _, err := client.From("User").Select("points", "exact", false).Eq(column, value).ExecuteTo(&userPoints); err != nil {
 		return nil, err
 	}
 	if len(userPoints) == 0 {
