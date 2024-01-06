@@ -6,15 +6,11 @@ import (
 
 	"github.com/codecoogs/gogo/wrappers/http"
 	"github.com/codecoogs/gogo/wrappers/supabase"
-	"github.com/google/uuid"
 	"github.com/supabase-community/supabase-go"
 	"github.com/supabase/postgrest-go"
 )
 
 type LeaderboardUser struct {
-	LeaderboardId uuid.UUID `json:"leaderboard_id"`
-	UserId        uuid.UUID `json:"user_id"`
-	Rank          int       `json:"rank"`
 	FirstName string `json:"first_name"`
 	LastName string `json:"last_name"`
 	Points int `json:"points"`
@@ -100,14 +96,14 @@ func getLeaderboard(client *supabase.Client, top string) ([]LeaderboardUser, err
 	if err != nil {
 		return nil, err
 	}
-
+	
 	var MyOrderOpts = &postgrest.OrderOpts{
-		Ascending:    true,
+		Ascending:    false,
 		NullsFirst:   false,
 		ForeignTable: "",
 	}
-
-	if _, err := client.From("Leaderboard_User").Select("*", "exact", false).Limit(count, "").Order("rank", MyOrderOpts).ExecuteTo(&leaderboard); err != nil {
+	
+	if _, err := client.From("User").Select("first_name, last_name, points, discord", "exact", false).Order("points", MyOrderOpts).Limit(count, "").ExecuteTo(&leaderboard); err != nil {
 		return nil, err
 	}
 	if len(leaderboard) == 0 {
