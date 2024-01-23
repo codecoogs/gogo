@@ -2,30 +2,30 @@ package points
 
 import (
 	"encoding/json"
-	"net/http"
 	"github.com/codecoogs/gogo/wrappers/http"
 	"github.com/codecoogs/gogo/wrappers/supabase"
 	"github.com/supabase-community/supabase-go"
+	"net/http"
 )
 
 type UserPoints struct {
 	FirstName string `json:"first_name,omitempty"`
-	LastName string `json:"last_name,omitempty"`
-	Points int `json:"points"`
+	LastName  string `json:"last_name,omitempty"`
+	Points    int    `json:"points"`
 }
 type Response struct {
-    Success bool `json:"success"`
-	Data *UserPoints `json:"data,omitempty"`
-    Error   *ErrorDetails `json:"error,omitempty"`
+	Success bool          `json:"success"`
+	Data    *UserPoints   `json:"data,omitempty"`
+	Error   *ErrorDetails `json:"error,omitempty"`
 }
 
 type ErrorDetails struct {
-    Message string `json:"message"`
+	Message string `json:"message"`
 }
 
 func Handler(w http.ResponseWriter, r *http.Request) {
 	crw := &codecoogshttp.ResponseWriter{W: w}
-  	crw.SetCors(r.Host)
+	crw.SetCors(r.Host)
 
 	client, err := codecoogssupabase.CreateClient()
 	if err != nil {
@@ -38,7 +38,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-  	id := r.URL.Query().Get("id")
+	id := r.URL.Query().Get("id")
 	email := r.URL.Query().Get("email")
 	discordId := r.URL.Query().Get("discordId")
 
@@ -78,7 +78,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 
 		crw.SendJSONResponse(http.StatusOK, Response{
 			Success: true,
-			Data: userPoints,
+			Data:    userPoints,
 		})
 	case "PATCH":
 		var updatedUserPoints UserPoints
@@ -129,13 +129,13 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 func getColumnAndValue(id string, email string, discordId string) (string, string) {
 	if id != "" {
 		return "id", id
-	} 
+	}
 	if email != "" {
 		return "email", email
 	}
 	if discordId != "" {
 		return "discord", discordId
-	} 
+	}
 	return "", ""
 }
 
@@ -153,7 +153,7 @@ func getNameAndPointsByColumn(client *supabase.Client, column string, value stri
 
 func updateUserPoints(client *supabase.Client, column string, value string, userPoints UserPoints) (int64, error) {
 	_, count, err := client.From("User").Update(userPoints, "", "exact").Eq(column, value).Execute()
-	if err != nil{
+	if err != nil {
 		return 0, err
 	}
 	return count, nil
