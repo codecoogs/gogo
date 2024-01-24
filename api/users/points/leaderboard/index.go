@@ -11,10 +11,10 @@ import (
 )
 
 type LeaderboardUser struct {
-	FirstName string `json:"first_name"`
-	LastName string `json:"last_name"`
-	Points int `json:"points"`
-	Discord *string `json:"discord"`
+	FirstName string  `json:"first_name"`
+	LastName  string  `json:"last_name"`
+	Points    int     `json:"points"`
+	Discord   *string `json:"discord"`
 }
 
 type Response struct {
@@ -96,13 +96,13 @@ func getLeaderboard(client *supabase.Client, top string) ([]LeaderboardUser, err
 	if err != nil {
 		return nil, err
 	}
-	
+
 	var MyOrderOpts = &postgrest.OrderOpts{
 		Ascending:    false,
 		NullsFirst:   false,
 		ForeignTable: "",
 	}
-	
+
 	if _, err := client.From("User").Select("first_name, last_name, points, discord", "exact", false).Order("points", MyOrderOpts).Limit(count, "").ExecuteTo(&leaderboard); err != nil {
 		return nil, err
 	}

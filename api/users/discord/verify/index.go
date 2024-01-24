@@ -12,16 +12,16 @@ type UserDiscord struct {
 	Discord *string `json:"discord,omitempty"`
 }
 type Response struct {
-    Success bool `json:"success"`
-    Error   *ErrorDetails `json:"error,omitempty"`
+	Success bool          `json:"success"`
+	Error   *ErrorDetails `json:"error,omitempty"`
 }
 type ErrorDetails struct {
-    Message string `json:"message"`
+	Message string `json:"message"`
 }
 
 func Handler(w http.ResponseWriter, r *http.Request) {
 	crw := &codecoogshttp.ResponseWriter{W: w}
-  	crw.SetCors(r.Host)
+	crw.SetCors(r.Host)
 
 	client, err := codecoogssupabase.CreateClient()
 	if err != nil {
