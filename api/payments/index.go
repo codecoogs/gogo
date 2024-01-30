@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/codecoogs/gogo/wrappers/http"
 	"github.com/codecoogs/gogo/wrappers/supabase"
+	"github.com/codecoogs/gogo/constants"
 	"github.com/google/uuid"
 	"net/http"
 )
@@ -62,7 +63,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			if _, _, err := client.From("Payment").Insert(payment, false, "", "", "exact").Execute(); err != nil {
+			if _, _, err := client.From(constants.PAYMENT_TABLE).Insert(payment, false, "", "", "exact").Execute(); err != nil {
 				crw.SendJSONResponse(http.StatusInternalServerError, Response{
 					Success: false,
 					Error: &ErrorDetails{
@@ -86,7 +87,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case "GET":
 			var payment []Payment
-			if _, err := client.From("Payment").Select("*", "exact", false).Eq("id", id).ExecuteTo(&payment); err != nil {
+			if _, err := client.From(constants.PAYMENT_TABLE).Select("*", "exact", false).Eq("id", id).ExecuteTo(&payment); err != nil {
 				crw.SendJSONResponse(http.StatusInternalServerError, Response{
 					Success: false,
 					Error: &ErrorDetails{
@@ -111,7 +112,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			if _, _, err := client.From("Payment").Update(updatedPayment, "", "exact").Eq("id", id).Execute(); err != nil {
+			if _, _, err := client.From(constants.PAYMENT_TABLE).Update(updatedPayment, "", "exact").Eq("id", id).Execute(); err != nil {
 				crw.SendJSONResponse(http.StatusInternalServerError, Response{
 					Success: false,
 					Error: &ErrorDetails{
@@ -124,7 +125,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 				Success: true,
 			})
 		case "DELETE":
-			if _, _, err := client.From("Payment").Delete("", "exact").Eq("id", id).Execute(); err != nil {
+			if _, _, err := client.From(constants.PAYMENT_TABLE).Delete("", "exact").Eq("id", id).Execute(); err != nil {
 				crw.SendJSONResponse(http.StatusInternalServerError, Response{
 					Success: false,
 					Error: &ErrorDetails{

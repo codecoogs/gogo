@@ -6,6 +6,7 @@ import (
 
 	"github.com/codecoogs/gogo/wrappers/http"
 	"github.com/codecoogs/gogo/wrappers/supabase"
+	"github.com/codecoogs/gogo/constants"
 	"github.com/supabase-community/supabase-go"
 	"github.com/supabase/postgrest-go"
 )
@@ -103,7 +104,7 @@ func getLeaderboard(client *supabase.Client, top string) ([]LeaderboardUser, err
 		ForeignTable: "",
 	}
 
-	if _, err := client.From("User").Select("first_name, last_name, points, discord", "exact", false).Order("points", MyOrderOpts).Limit(count, "").ExecuteTo(&leaderboard); err != nil {
+	if _, err := client.From(constants.USER_TABLE).Select("first_name, last_name, points, discord", "exact", false).Order("points", MyOrderOpts).Limit(count, "").ExecuteTo(&leaderboard); err != nil {
 		return nil, err
 	}
 	if len(leaderboard) == 0 {

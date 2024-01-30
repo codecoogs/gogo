@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/codecoogs/gogo/wrappers/http"
 	"github.com/codecoogs/gogo/wrappers/supabase"
+	"github.com/codecoogs/gogo/constants"
 	"github.com/supabase-community/supabase-go"
 	"net/http"
 )
@@ -141,7 +142,7 @@ func getColumnAndValue(id string, email string, discordId string) (string, strin
 
 func getNameAndPointsByColumn(client *supabase.Client, column string, value string) (*UserPoints, error) {
 	var userPoints []UserPoints
-	if _, err := client.From("User").Select("first_name, last_name, points", "exact", false).Eq(column, value).ExecuteTo(&userPoints); err != nil {
+	if _, err := client.From(constants.USER_TABLE).Select("first_name, last_name, points", "exact", false).Eq(column, value).ExecuteTo(&userPoints); err != nil {
 		return nil, err
 	}
 	if len(userPoints) == 0 {
@@ -152,7 +153,7 @@ func getNameAndPointsByColumn(client *supabase.Client, column string, value stri
 }
 
 func updateUserPoints(client *supabase.Client, column string, value string, userPoints UserPoints) (int64, error) {
-	_, count, err := client.From("User").Update(userPoints, "", "exact").Eq(column, value).Execute()
+	_, count, err := client.From(constants.USER_TABLE).Update(userPoints, "", "exact").Eq(column, value).Execute()
 	if err != nil {
 		return 0, err
 	}

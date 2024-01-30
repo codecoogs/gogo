@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/codecoogs/gogo/wrappers/http"
 	"github.com/codecoogs/gogo/wrappers/supabase"
+	"github.com/codecoogs/gogo/constants"
 	"github.com/google/uuid"
 	"net/http"
 )
@@ -56,7 +57,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 			}
 			// TODO: Perform validation checks on updatedTeam data
 
-			if _, _, err := client.From("Team").Insert(updatedTeam, false, "", "", "exact").Execute(); err != nil {
+			if _, _, err := client.From(constants.TEAM_TABLE).Insert(updatedTeam, false, "", "", "exact").Execute(); err != nil {
 				crw.SendJSONResponse(http.StatusInternalServerError, Response{
 					Success: false,
 					Error: &ErrorDetails{
@@ -80,7 +81,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case "GET":
 			var team []Team
-			if _, err := client.From("Team").Select("*", "exact", false).Eq("id", id).ExecuteTo(&team); err != nil {
+			if _, err := client.From(constants.TEAM_TABLE).Select("*", "exact", false).Eq("id", id).ExecuteTo(&team); err != nil {
 				crw.SendJSONResponse(http.StatusInternalServerError, Response{
 					Success: false,
 					Error: &ErrorDetails{
@@ -106,7 +107,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 			}
 			// TODO: Perform validation checks on updatedTeam data
 
-			if _, _, err := client.From("Team").Update(updatedTeam, "", "exact").Eq("id", id).Execute(); err != nil {
+			if _, _, err := client.From(constants.TEAM_TABLE).Update(updatedTeam, "", "exact").Eq("id", id).Execute(); err != nil {
 				crw.SendJSONResponse(http.StatusInternalServerError, Response{
 					Success: false,
 					Error: &ErrorDetails{
@@ -119,7 +120,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 				Success: true,
 			})
 		case "DELETE":
-			if _, _, err := client.From("Team").Delete("", "exact").Eq("id", id).Execute(); err != nil {
+			if _, _, err := client.From(constants.TEAM_TABLE).Delete("", "exact").Eq("id", id).Execute(); err != nil {
 				crw.SendJSONResponse(http.StatusInternalServerError, Response{
 					Success: false,
 					Error: &ErrorDetails{
