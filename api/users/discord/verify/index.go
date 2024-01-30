@@ -2,9 +2,9 @@ package discord
 
 import (
 	"net/http"
-
 	"github.com/codecoogs/gogo/wrappers/http"
 	"github.com/codecoogs/gogo/wrappers/supabase"
+	"github.com/codecoogs/gogo/constants"
 	"github.com/supabase-community/supabase-go"
 )
 
@@ -103,7 +103,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 
 func getUserDiscordByEmail(client *supabase.Client, email string) (*UserDiscord, error) {
 	var userDiscord []UserDiscord
-	if _, err := client.From("User").Select("discord", "exact", false).Eq("email", email).ExecuteTo(&userDiscord); err != nil {
+	if _, err := client.From(constants.USER_TABLE).Select("discord", "exact", false).Eq("email", email).ExecuteTo(&userDiscord); err != nil {
 		return nil, err
 	}
 
@@ -114,6 +114,6 @@ func getUserDiscordByEmail(client *supabase.Client, email string) (*UserDiscord,
 }
 
 func updateUserDiscord(client *supabase.Client, email, discordID string) error {
-	_, _, err := client.From("User").Update(map[string]interface{}{"discord": discordID}, "", "exact").Eq("email", email).Execute()
+	_, _, err := client.From(constants.USER_TABLE).Update(map[string]interface{}{"discord": discordID}, "", "exact").Eq("email", email).Execute()
 	return err
 }

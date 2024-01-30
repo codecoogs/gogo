@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/codecoogs/gogo/wrappers/http"
 	"github.com/codecoogs/gogo/wrappers/supabase"
+	"github.com/codecoogs/gogo/constants"
 	"github.com/google/uuid"
 	"net/http"
 )
@@ -61,7 +62,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			if _, _, err := client.From("Event").Insert(event, false, "", "", "exact").Execute(); err != nil {
+			if _, _, err := client.From(constants.EVENT_TABLE).Insert(event, false, "", "", "exact").Execute(); err != nil {
 				crw.SendJSONResponse(http.StatusInternalServerError, Response{
 					Success: false,
 					Error: &ErrorDetails{
@@ -85,7 +86,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case "GET":
 			var event []Event
-			if _, err := client.From("Event").Select("*", "exact", false).Eq("id", id).ExecuteTo(&event); err != nil {
+			if _, err := client.From(constants.EVENT_TABLE).Select("*", "exact", false).Eq("id", id).ExecuteTo(&event); err != nil {
 				crw.SendJSONResponse(http.StatusInternalServerError, Response{
 					Success: false,
 					Error: &ErrorDetails{
@@ -110,7 +111,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			if _, _, err := client.From("Event").Update(updatedEvent, "", "exact").Eq("id", id).Execute(); err != nil {
+			if _, _, err := client.From(constants.EVENT_TABLE).Update(updatedEvent, "", "exact").Eq("id", id).Execute(); err != nil {
 				crw.SendJSONResponse(http.StatusInternalServerError, Response{
 					Success: false,
 					Error: &ErrorDetails{
@@ -123,7 +124,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 				Success: true,
 			})
 		case "DELETE":
-			if _, _, err := client.From("Event").Delete("", "exact").Eq("id", id).Execute(); err != nil {
+			if _, _, err := client.From(constants.EVENT_TABLE).Delete("", "exact").Eq("id", id).Execute(); err != nil {
 				crw.SendJSONResponse(http.StatusInternalServerError, Response{
 					Success: false,
 					Error: &ErrorDetails{
