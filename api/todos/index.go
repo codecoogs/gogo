@@ -45,6 +45,21 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 
 	if id == "" {
 		switch r.Method {
+		case "GET":
+			var todo []Todo
+			if _, err := client.From(constants.TODO_TABLE).Select("*", "exact", false).ExecuteTo(&todo); err != nil {
+				crw.SendJSONResponse(http.StatusInternalServerError, Response{
+					Success: false,
+					Error: &ErrorDetails{
+						Message: "Failed to get todo: " + err.Error(),
+					},
+				})
+				return
+			}
+			crw.SendJSONResponse(http.StatusOK, Response{
+				Success: true,
+				Data:    todo,
+			})
 		case "POST":
 			var newTodo Todo;
 			if err := json.NewDecoder(r.Body).Decode(&newTodo); err != nil {
