@@ -10,12 +10,12 @@ import (
 )
 
 type TodoStatus struct {
-	Completed bool      `json:"completed"`
+	Completed bool `json:"completed"`
 }
 
 type Response struct {
 	Success bool          `json:"success"`
-	Data    []TodoStatus        `json:"data,omitempty"`
+	Data    []TodoStatus  `json:"data,omitempty"`
 	Error   *ErrorDetails `json:"error,omitempty"`
 }
 
