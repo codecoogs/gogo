@@ -26,7 +26,7 @@ func (crw *ResponseWriter) SetCors(origin string) {
 		crw.W.Header().Set(ControlOriginHeader, "http://localhost:3001")
 	}
 
-	crw.W.Header().Set("Access-Control-Allow-Methods", "GET")
+	crw.W.Header().Set("Access-Control-Allow-Methods", "*")
 }
 
 func (crw *ResponseWriter) SendJSONResponse(status int, payload interface{}) {
