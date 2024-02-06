@@ -10,7 +10,7 @@ import (
 )
 
 type Todo struct {
-	ID        int    `json:"id"`
+	ID        int    `json:"id,omitempty"`
 	Title     string `json:"title"`
 	Deadline  string `json:"deadline"`
 	Completed bool   `json:"completed"`
