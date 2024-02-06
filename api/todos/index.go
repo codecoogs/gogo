@@ -10,10 +10,11 @@ import (
 )
 
 type Todo struct {
-	ID        int    `json:"id,omitempty"`
+	ID        int    `json:"id"`
 	Title     string `json:"title"`
 	Deadline  string `json:"deadline"`
 	Completed bool   `json:"completed"`
+	TodoUser *TodoUser `json:"todos_users,omitempty"`
 }
 
 type TodoUser struct {
@@ -58,7 +59,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 				ForeignTable: "",
 			}
 			var todo []Todo
-			if _, err := client.From(constants.TODO_TABLE).Select("*", "exact", false).Order("deadline", MyOrderOpts).ExecuteTo(&todo); err != nil {
+			if _, err := client.From(constants.TODO_TABLE).Select("id,title,deadline,completed,todos_users(todo_id,discord_id)", "exact", false).Order("deadline", MyOrderOpts).ExecuteTo(&todo); err != nil {
 				crw.SendJSONResponse(http.StatusInternalServerError, Response{
 					Success: false,
 					Error: &ErrorDetails{
