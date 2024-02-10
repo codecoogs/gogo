@@ -10,7 +10,7 @@ import (
 )
 
 type Team struct {
-	ID     uuid.UUID `json:"id"`
+	ID     *uuid.UUID `json:"id,omitempty"`
 	Name   string    `json:"name"`
 	Points int       `json:"points"`
 }
