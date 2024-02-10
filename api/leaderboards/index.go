@@ -6,11 +6,12 @@ import (
 	"github.com/codecoogs/gogo/wrappers/supabase"
 	"github.com/codecoogs/gogo/constants"
 	"net/http"
+	"github.com/google/uuid"
 )
 
 type Leaderboard struct {
-	ID   *int    `json:"id,omitempty"`
-	Name string `json:"name"`
+	ID   *uuid.UUID `json:"id,omitempty"`
+	Name string     `json:"name"`
 }
 
 type Response struct {
