@@ -1,2 +1,5 @@
 .*.swp
 .vercel
+.idea
+.env
+node_modules
