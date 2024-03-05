@@ -16,7 +16,20 @@ $ git clone https://github.com/codecoogs/gogo.git
 ```
 
 ## Usage
-TBA
+Install the necessary dependencies
+```bash
+npm ci
+```
+
+Setup vercel
+```bash
+npm run setup
+```
+
+Run locally
+```bash
+npm start
+```
 
 ## Contributing
 Please make sure to read the [Contributing Guide](https://github.com/codecoogs/.github/blob/main/CONTRIBUTING.md)
