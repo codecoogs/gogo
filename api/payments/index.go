@@ -10,7 +10,7 @@ import (
 )
 
 type Payment struct {
-	ID          uuid.UUID `json:"id"`
+	ID          *uuid.UUID `json:"id,omitempty"`
 	Payer       uuid.UUID `json:"payer"`
 	Payee       uuid.UUID `json:"payee"`
 	Name        string    `json:"name"`
