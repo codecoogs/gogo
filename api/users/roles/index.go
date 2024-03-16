@@ -2,6 +2,7 @@ package roles
 
 import (
 	"encoding/json"
+	"github.com/codecoogs/gogo/wrappers/auth"
 	"net/http"
 	"strconv"
 
@@ -49,6 +50,16 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 			Success: false,
 			Error: &ErrorDetails{
 				Message: "Method not allowed for this resource",
+			},
+		})
+		return
+	}
+
+	if token := r.Header.Get("Authorization"); !codecoogsauth.Authorize(token) {
+		sendResponse(crw, http.StatusUnauthorized, Response{
+			Success: false,
+			Error: &ErrorDetails{
+				Message: "Unauthorized access",
 			},
 		})
 		return
