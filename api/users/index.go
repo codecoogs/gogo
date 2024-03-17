@@ -16,6 +16,7 @@ type User struct {
 	Email              string     `json:"email"`
 	Phone              string     `json:"phone"`
 	Password           string     `json:"password"`
+	Major              string     `json:"major"`
 	Classification     string     `json:"classification"`
 	ExpectedGraduation string     `json:"expected_graduation"`
 	Discord            *string    `json:"discord"`
