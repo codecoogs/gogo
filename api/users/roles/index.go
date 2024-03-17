@@ -13,8 +13,9 @@ import (
 )
 
 type UsersRoles struct {
-	UserID string `json:"user_id"`
-	RoleID int8   `json:"role_id"`
+	ID     *string `json:"id,omitempty"`
+	UserID string  `json:"user_id"`
+	RoleID int8    `json:"role_id"`
 }
 
 type Response struct {
@@ -26,17 +27,13 @@ type ErrorDetails struct {
 	Message string `json:"message"`
 }
 
-func sendResponse(crw *codecoogshttp.ResponseWriter, statusCode int, response Response) {
-	crw.SendJSONResponse(statusCode, response)
-}
-
 func Handler(w http.ResponseWriter, r *http.Request) {
 	crw := &codecoogshttp.ResponseWriter{W: w}
 	crw.SetCors(r.Host)
 
 	client, err := codecoogssupabase.CreateClient()
 	if err != nil {
-		sendResponse(crw, http.StatusInternalServerError, Response{
+		crw.SendJSONResponse(http.StatusInternalServerError, Response{
 			Success: false,
 			Error: &ErrorDetails{
 				Message: "Failed to create Supabase client: " + err.Error(),
@@ -46,7 +43,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method != "POST" {
-		sendResponse(crw, http.StatusMethodNotAllowed, Response{
+		crw.SendJSONResponse(http.StatusMethodNotAllowed, Response{
 			Success: false,
 			Error: &ErrorDetails{
 				Message: "Method not allowed for this resource",
@@ -56,7 +53,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if token := r.Header.Get("Authorization"); !codecoogsauth.Authorize(token) {
-		sendResponse(crw, http.StatusUnauthorized, Response{
+		crw.SendJSONResponse(http.StatusUnauthorized, Response{
 			Success: false,
 			Error: &ErrorDetails{
 				Message: "Unauthorized access",
@@ -67,7 +64,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 
 	var newUserRole UsersRoles
 	if err := json.NewDecoder(r.Body).Decode(&newUserRole); err != nil {
-		sendResponse(crw, http.StatusBadRequest, Response{
+		crw.SendJSONResponse(http.StatusBadRequest, Response{
 			Success: false,
 			Error: &ErrorDetails{
 				Message: "Invalid request body: " + err.Error(),
@@ -77,7 +74,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !isValidUser(client, newUserRole.UserID) {
-		sendResponse(crw, http.StatusInternalServerError, Response{
+		crw.SendJSONResponse(http.StatusInternalServerError, Response{
 			Success: false,
 			Error: &ErrorDetails{
 				Message: "Invalid user",
@@ -87,7 +84,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !isValidRole(client, strconv.Itoa(int(newUserRole.RoleID))) {
-		sendResponse(crw, http.StatusInternalServerError, Response{
+		crw.SendJSONResponse(http.StatusInternalServerError, Response{
 			Success: false,
 			Error: &ErrorDetails{
 				Message: "Invalid role",
@@ -97,7 +94,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := addUserRole(client, newUserRole); err != nil {
-		sendResponse(crw, http.StatusInternalServerError, Response{
+		crw.SendJSONResponse(http.StatusInternalServerError, Response{
 			Success: false,
 			Error: &ErrorDetails{
 				Message: "Failed to add user role: " + err.Error(),
@@ -106,7 +103,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sendResponse(crw, http.StatusOK, Response{Success: true})
+	crw.SendJSONResponse(http.StatusOK, Response{Success: true})
 }
 
 func isValidUser(client *supabase.Client, userID string) bool {

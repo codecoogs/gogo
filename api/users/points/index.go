@@ -1,10 +1,10 @@
-package points
+package users
 
 import (
 	"encoding/json"
+	"github.com/codecoogs/gogo/constants"
 	"github.com/codecoogs/gogo/wrappers/http"
 	"github.com/codecoogs/gogo/wrappers/supabase"
-	"github.com/codecoogs/gogo/constants"
 	"github.com/supabase-community/supabase-go"
 	"net/http"
 )
