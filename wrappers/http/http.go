@@ -4,13 +4,11 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-        "strings"
 )
 
 const (
 	ContentTypeHeader   = "Content-Type"
 	JSONContentType     = "application/json"
-	ControlOriginHeader = "Access-Control-Allow-Origin"
 )
 
 type ResponseWriter struct {
@@ -18,14 +16,7 @@ type ResponseWriter struct {
 }
 
 func (crw *ResponseWriter) SetCors(origin string) {
-	if strings.Contains(origin, "www.codecoogs.com") {
-		crw.W.Header().Set(ControlOriginHeader, "https://www.codecoogs.com")
-	}
-
-	if strings.Contains(origin, "127.0.0.1") {
-		crw.W.Header().Set(ControlOriginHeader, "http://localhost:3001")
-	}
-
+	crw.W.Header().Set("Access-Control-Allow-Origin", "*")
 	crw.W.Header().Set("Access-Control-Allow-Methods", "*")
 }
 
