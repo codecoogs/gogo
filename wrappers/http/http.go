@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-  //"strings"
 )
 
 const (
@@ -18,8 +17,6 @@ type ResponseWriter struct {
 }
 
 func (crw *ResponseWriter) SetCors(origin string) {
-  // TODO: handle development and production client side origins
-  /*
 	if strings.Contains(origin, "www.codecoogs.com") {
 		crw.W.Header().Set(ControlOriginHeader, "https://www.codecoogs.com")
 	}
@@ -27,8 +24,7 @@ func (crw *ResponseWriter) SetCors(origin string) {
 	if strings.Contains(origin, "127.0.0.1") {
 		crw.W.Header().Set(ControlOriginHeader, "http://localhost:3001")
 	}
-  */
-	crw.W.Header().Set(ControlOriginHeader, "*")
+
 	crw.W.Header().Set("Access-Control-Allow-Methods", "*")
 }
 
