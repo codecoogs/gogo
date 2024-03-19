@@ -7,4 +7,4 @@ require (
 	github.com/supabase-community/supabase-go v0.0.1
 )
 
-require github.com/supabase/postgrest-go v0.0.7 // indirect
+require github.com/supabase/postgrest-go v0.0.7
