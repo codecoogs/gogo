@@ -19,7 +19,7 @@ type ResponseWriter struct {
 
 func (crw *ResponseWriter) SetCors(origin string) {
 	if strings.Contains(origin, "www.codecoogs.com") {
-		crw.W.Header().Set(ControlOriginHeader, "https://codecoogs.com")
+		crw.W.Header().Set(ControlOriginHeader, "https://www.codecoogs.com")
 	}
 
 	if strings.Contains(origin, "127.0.0.1") {
