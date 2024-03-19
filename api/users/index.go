@@ -77,6 +77,10 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 			crw.SendJSONResponse(http.StatusOK, Response{
 				Success: true,
 			})
+		case "OPTIONS":
+			crw.SendJSONResponse(http.StatusOK, Response{
+				Success: true,
+			})
 		default:
 			crw.SendJSONResponse(http.StatusMethodNotAllowed, Response{
 				Success: false,
