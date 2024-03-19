@@ -18,6 +18,7 @@ type ResponseWriter struct {
 func (crw *ResponseWriter) SetCors(origin string) {
 	crw.W.Header().Set("Access-Control-Allow-Origin", "*")
 	crw.W.Header().Set("Access-Control-Allow-Methods", "*")
+	crw.W.Header().Set("Access-Control-Allow-Headers", "*")
 }
 
 func (crw *ResponseWriter) SendJSONResponse(status int, payload interface{}) {
