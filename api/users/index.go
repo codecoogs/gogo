@@ -2,15 +2,19 @@ package users
 
 import (
 	"encoding/json"
-	"github.com/codecoogs/gogo/wrappers/http"
-	"github.com/codecoogs/gogo/wrappers/supabase"
-	"github.com/codecoogs/gogo/constants"
-	"github.com/google/uuid"
 	"net/http"
+
+	"github.com/codecoogs/gogo/constants"
+	codecoogshttp "github.com/codecoogs/gogo/wrappers/http"
+	codecoogssupabase "github.com/codecoogs/gogo/wrappers/supabase"
+	"github.com/google/uuid"
+
+	"github.com/stripe/stripe-go/v79"
+	"github.com/stripe/stripe-go/v79/checkout/session"
 )
 
 type User struct {
-	ID                 *uuid.UUID  `json:"id,omitempty"`
+	ID                 *uuid.UUID `json:"id,omitempty"`
 	FirstName          string     `json:"first_name"`
 	LastName           string     `json:"last_name"`
 	Email              string     `json:"email"`
@@ -19,15 +23,19 @@ type User struct {
 	Major              string     `json:"major"`
 	Classification     string     `json:"classification"`
 	ExpectedGraduation string     `json:"expected_graduation"`
-	Discord            *string    `json:"discord"`
-	Team               *uuid.UUID `json:"team"`
-	Points             int        `json:"points"`
+	Membership         string     `json:"membership"`
+	Paid               bool       `json:"paid"`
+
+	Discord *string    `json:"discord"`
+	Team    *uuid.UUID `json:"team"`
+	Points  int        `json:"points"`
 }
 
 type Response struct {
-	Success bool          `json:"success"`
-	Data    []User        `json:"data,omitempty"`
-	Error   *ErrorDetails `json:"error,omitempty"`
+	Success   bool          `json:"success"`
+	StripeURL string        `json:"url"`
+	Data      []User        `json:"data,omitempty"`
+	Error     *ErrorDetails `json:"error,omitempty"`
 }
 
 type ErrorDetails struct {
@@ -55,15 +63,39 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case "POST":
 			var user User
-			if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+
+			if err := r.ParseMultipartForm(32 << 20); err != nil {
 				crw.SendJSONResponse(http.StatusBadRequest, Response{
 					Success: false,
 					Error: &ErrorDetails{
-						Message: "Invalid request body: " + err.Error(),
+						Message: "Invalid request form data: " + err.Error(),
 					},
 				})
 				return
 			}
+
+			user.FirstName = r.FormValue("first_name")
+			user.LastName = r.FormValue("last_name")
+			user.Email = r.FormValue("email")
+			user.Phone = r.FormValue("phone")
+			user.Major = r.FormValue("major")
+			user.Classification = r.FormValue("classification")
+			user.ExpectedGraduation = r.FormValue("expected_graduation")
+			user.Membership = r.FormValue("membership")
+			user.Paid = false
+
+			// if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+			// 	crw.SendJSONResponse(http.StatusBadRequest, Response{
+			// 		Success: false,
+			// 		Error: &ErrorDetails{
+			// 			Message: "Invalid request body: " + err.Error(),
+			// 		},
+			// 	})
+			// 	return
+			// }
+
+			// remove row "resume" from form data dictionary
+			// add row "paid" (boolean value) into the data dictionary
 
 			if _, _, err := client.From(constants.USER_TABLE).Insert(user, false, "", "", "exact").Execute(); err != nil {
 				crw.SendJSONResponse(http.StatusInternalServerError, Response{
@@ -74,8 +106,45 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 				})
 				return
 			}
+
+			var priceID string
+			if user.Membership == "Semester" {
+				priceID = "price_1PqH5kRuQxKvYvnuUrtWMIK9"
+			} else {
+				priceID = "price_1PqH6FRuQxKvYvnuJa4WUwhw"
+			}
+
+			stripe.Key = "sk_test_51PgpXJRuQxKvYvnuPRA8fwnaZODWOjbQkvUnPSeFKnUy6ZAGI483jBLsIs6LjCdgUbfcFnt1cXJUQea9WJNTuB6t00GnJLGbIH"
+			params := &stripe.CheckoutSessionParams{
+				SuccessURL:       stripe.String("https://example.com/success"),
+				CustomerCreation: stripe.String(string(stripe.CheckoutSessionCustomerCreationAlways)),
+				CustomerEmail:    &user.Email,
+				LineItems: []*stripe.CheckoutSessionLineItemParams{
+					&stripe.CheckoutSessionLineItemParams{
+						Price:    stripe.String(priceID),
+						Quantity: stripe.Int64(1),
+					},
+				},
+				Mode: stripe.String(string(stripe.CheckoutSessionModePayment)),
+				Metadata: map[string]string{
+					"CustomerPhone": user.Phone,
+				},
+			}
+
+			result, err := session.New(params)
+			if err != nil {
+				crw.SendJSONResponse(http.StatusInternalServerError, Response{
+					Success: false,
+					Error: &ErrorDetails{
+						Message: "Failed to create Stripe Session: " + err.Error(),
+					},
+				})
+				return
+			}
+
 			crw.SendJSONResponse(http.StatusOK, Response{
-				Success: true,
+				Success:   true,
+				StripeURL: result.URL,
 			})
 		case "OPTIONS":
 			crw.SendJSONResponse(http.StatusOK, Response{
