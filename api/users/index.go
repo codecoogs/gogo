@@ -116,7 +116,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 
 			stripe.Key = "sk_test_51PgpXJRuQxKvYvnuPRA8fwnaZODWOjbQkvUnPSeFKnUy6ZAGI483jBLsIs6LjCdgUbfcFnt1cXJUQea9WJNTuB6t00GnJLGbIH"
 			params := &stripe.CheckoutSessionParams{
-				SuccessURL:       stripe.String("https://example.com/success"),
+				SuccessURL:       stripe.String("http://localhost:8080/success"),
 				CustomerCreation: stripe.String(string(stripe.CheckoutSessionCustomerCreationAlways)),
 				CustomerEmail:    &user.Email,
 				LineItems: []*stripe.CheckoutSessionLineItemParams{
