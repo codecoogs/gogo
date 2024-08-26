@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 
 	"github.com/codecoogs/gogo/constants"
 	codecoogshttp "github.com/codecoogs/gogo/wrappers/http"
@@ -125,7 +126,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 				priceID = "price_1Pkp2WRuQxKvYvnu0GLPeuEE"
 			}
 
-			stripe.Key = "pk_live_51PgpXJRuQxKvYvnuwaOI7Duu3mFikNgIFJJxyFgOW1XTakenE391nj4D9Dbm860pBHhsg6IRcYN8TMgF5AFJmvlZ00kRJo6JJv"
+			stripe.Key = os.Getenv("STRIPE_SK")
 			params := &stripe.CheckoutSessionParams{
 				SuccessURL:       stripe.String("https://www.codecoogs.com/success"),
 				CustomerCreation: stripe.String(string(stripe.CheckoutSessionCustomerCreationAlways)),
