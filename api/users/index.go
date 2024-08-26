@@ -2,6 +2,7 @@ package users
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/codecoogs/gogo/constants"
@@ -97,6 +98,15 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 			// remove row "resume" from form data dictionary
 			// add row "paid" (boolean value) into the data dictionary
 
+			if _, _, err := client.From(constants.USER_TABLE).Delete("", "").Eq("email", user.Email).Execute(); err != nil {
+				crw.SendJSONResponse(http.StatusInternalServerError, Response{
+					Success: false,
+					Error: &ErrorDetails{
+						Message: "Failed to delete existing user: " + err.Error(),
+					},
+				})
+			}
+
 			if _, _, err := client.From(constants.USER_TABLE).Insert(user, false, "", "", "exact").Execute(); err != nil {
 				crw.SendJSONResponse(http.StatusInternalServerError, Response{
 					Success: false,
@@ -104,19 +114,20 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 						Message: "Failed to create user: " + err.Error(),
 					},
 				})
+				fmt.Println(err)
 				return
 			}
 
 			var priceID string
 			if user.Membership == "Semester" {
-				priceID = "price_1PqH5kRuQxKvYvnuUrtWMIK9"
+				priceID = "price_1Pkp2WRuQxKvYvnuBdqcFUcm"
 			} else {
-				priceID = "price_1PqH6FRuQxKvYvnuJa4WUwhw"
+				priceID = "price_1Pkp2WRuQxKvYvnu0GLPeuEE"
 			}
 
-			stripe.Key = "sk_test_51PgpXJRuQxKvYvnuPRA8fwnaZODWOjbQkvUnPSeFKnUy6ZAGI483jBLsIs6LjCdgUbfcFnt1cXJUQea9WJNTuB6t00GnJLGbIH"
+			stripe.Key = "pk_live_51PgpXJRuQxKvYvnuwaOI7Duu3mFikNgIFJJxyFgOW1XTakenE391nj4D9Dbm860pBHhsg6IRcYN8TMgF5AFJmvlZ00kRJo6JJv"
 			params := &stripe.CheckoutSessionParams{
-				SuccessURL:       stripe.String("http://localhost:8080/success"),
+				SuccessURL:       stripe.String("https://www.codecoogs.com/success"),
 				CustomerCreation: stripe.String(string(stripe.CheckoutSessionCustomerCreationAlways)),
 				CustomerEmail:    &user.Email,
 				LineItems: []*stripe.CheckoutSessionLineItemParams{
