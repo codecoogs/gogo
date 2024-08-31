@@ -124,7 +124,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 				priceID = "price_1Pkp2WRuQxKvYvnuBdqcFUcm"
 			} else {
 				priceID = "price_1Pkp2WRuQxKvYvnu0GLPeuEE"
-			}
+			}		
 
 			stripe.Key = os.Getenv("STRIPE_SK")
 			params := &stripe.CheckoutSessionParams{
