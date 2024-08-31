@@ -83,6 +83,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 			user.Major = r.FormValue("major")
 			user.Classification = r.FormValue("classification")
 			user.ExpectedGraduation = r.FormValue("expected_graduation")
+			user.Discord = r.FormValue("discord")
 			user.Membership = r.FormValue("membership")
 			user.Paid = false
 
