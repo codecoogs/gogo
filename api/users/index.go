@@ -28,7 +28,7 @@ type User struct {
 	Membership         string     `json:"membership"`
 	Paid               bool       `json:"paid"`
 
-	Discord *string    `json:"discord"`
+	Discord string     `json:"discord"`
 	Team    *uuid.UUID `json:"team"`
 	Points  int        `json:"points"`
 }
@@ -125,7 +125,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 				priceID = "price_1Pkp2WRuQxKvYvnuBdqcFUcm"
 			} else {
 				priceID = "price_1Pkp2WRuQxKvYvnu0GLPeuEE"
-			}		
+			}
 
 			stripe.Key = os.Getenv("STRIPE_SK")
 			params := &stripe.CheckoutSessionParams{
