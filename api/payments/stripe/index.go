@@ -7,8 +7,11 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/codecoogs/gogo/constants"
+
+	"github.com/codecoogs/gogo/wrappers/rabbitmq"
 	codecoogssupabase "github.com/codecoogs/gogo/wrappers/supabase"
 	"github.com/google/uuid"
 
@@ -96,10 +99,29 @@ func Handler(w http.ResponseWriter, req *http.Request) {
 
 		log.Printf("Successfully updated paid status for %s.", checkoutSession.CustomerEmail)
 
-		// fmt.Println(checkoutSession.Metadata)
+		// Create a RabbitMQ connection and channel
+		conn := rabbitmq.ConnectRabbitMQ()
+		defer conn.Close()
 
-		// Then define and call a func to handle the successful payment intent.
-		// handlePaymentIntentSucceeded(paymentIntent)
+		ch, _ := conn.Channel()
+		defer ch.Close()
+		q := rabbitmq.SetupPurchaseQueue(ch)
+
+		// Construct the PurchaseEvent struct
+		purchase := constants.PurchaseEvent{
+			UserEmail:     checkoutSession.CustomerEmail,
+			UserName:      "Customer", // Set actual customer name if available
+			ProductName:   "Product",  // Replace with actual product info if available
+			ProductID:     checkoutSession.ID,
+			PurchasePrice: float64(checkoutSession.AmountTotal), // Stripe uses cents
+			PurchaseDate:  time.Now().Format(time.RFC3339),
+		}
+
+		// Publish the purchase event to RabbitMQ
+		rabbitmq.PublishPurchaseEvent(ch, q, purchase)
+		fmt.Println("Published purchase event to RabbitMQ")
+
+		w.WriteHeader(http.StatusOK)
 	case "payment_method.attached":
 		var paymentMethod stripe.PaymentMethod
 		err := json.Unmarshal(event.Data.Raw, &paymentMethod)
