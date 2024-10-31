@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
+	"time"
 
 	"github.com/codecoogs/gogo/constants"
 	codecoogshttp "github.com/codecoogs/gogo/wrappers/http"
@@ -14,6 +16,26 @@ import (
 	"github.com/stripe/stripe-go/v79"
 	"github.com/stripe/stripe-go/v79/checkout/session"
 )
+
+type SupabaseTime time.Time
+
+func (st *SupabaseTime) UnmarshalJSON(b []byte) error {
+	// Trim the quotes from the JSON string
+	s := strings.Trim(string(b), "\"")
+
+	// Parse the time string provided by Supabase
+	t, err := time.Parse("2006-01-02T15:04:05.999999", s)
+	if err != nil {
+		return err
+	}
+
+	*st = SupabaseTime(t)
+	return nil
+}
+
+func (st SupabaseTime) MarshalJSON() ([]byte, error) {
+	return []byte(fmt.Sprintf("\"%s\"", time.Time(st).Format("2006-01-02T15:04:05.999999"))), nil
+}
 
 type User struct {
 	ID                 *uuid.UUID `json:"id,omitempty"`
@@ -26,7 +48,12 @@ type User struct {
 	Classification     string     `json:"classification"`
 	ExpectedGraduation string     `json:"expected_graduation"`
 	Membership         string     `json:"membership"`
-	Paid               bool       `json:"paid"`
+
+	Paid        bool `json:"paid"`
+	ShirtBought bool `json:"shirt-bought"`
+
+	Created SupabaseTime `json:"created"`
+	Updated SupabaseTime `json:"updated"`
 
 	Discord string     `json:"discord"`
 	Team    *uuid.UUID `json:"team"`
@@ -65,6 +92,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case "POST":
 			var user User
+			var existingUsers []User
 
 			if err := r.ParseMultipartForm(32 << 20); err != nil {
 				crw.SendJSONResponse(http.StatusBadRequest, Response{
@@ -85,46 +113,69 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 			user.ExpectedGraduation = r.FormValue("expected_graduation")
 			user.Discord = r.FormValue("discord")
 			user.Membership = r.FormValue("membership")
-			user.Paid = false
 
-			// if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-			// 	crw.SendJSONResponse(http.StatusBadRequest, Response{
-			// 		Success: false,
-			// 		Error: &ErrorDetails{
-			// 			Message: "Invalid request body: " + err.Error(),
-			// 		},
-			// 	})
-			// 	return
-			// }
+			count, err := client.From(constants.USER_TABLE).Select("*", "exact", false).Eq("email", user.Email).ExecuteTo(&existingUsers)
+			fmt.Println(user)
 
-			// remove row "resume" from form data dictionary
-			// add row "paid" (boolean value) into the data dictionary
+			if err == nil {
+				fmt.Println(count)
 
-			if _, _, err := client.From(constants.USER_TABLE).Delete("", "").Eq("email", user.Email).Execute(); err != nil {
+				if count == 0 {
+					fmt.Println("Creating new member...")
+
+					user.Created = SupabaseTime(time.Now().UTC())
+					user.Updated = SupabaseTime(time.Now().UTC())
+
+					if _, _, err := client.From(constants.USER_TABLE).Insert(user, false, "", "", "exact").Execute(); err != nil {
+						crw.SendJSONResponse(http.StatusInternalServerError, Response{
+							Success: false,
+							Error: &ErrorDetails{
+								Message: "Failed to create user: " + err.Error(),
+							},
+						})
+						fmt.Println(err)
+						return
+					}
+				} else {
+					fmt.Println("Member already exists in database")
+
+					var existingUser = existingUsers[0]
+
+					existingUser.FirstName = user.FirstName
+					existingUser.LastName = user.LastName
+					existingUser.Phone = user.Phone
+					existingUser.Major = user.Major
+					existingUser.Classification = user.Classification
+					existingUser.ExpectedGraduation = user.ExpectedGraduation
+					existingUser.Discord = user.Discord
+
+					existingUser.Updated = SupabaseTime(time.Now().UTC())
+
+					if _, _, err := client.From(constants.USER_TABLE).Update(existingUser, "", "exact").Eq("email", existingUser.Email).Execute(); err != nil {
+						crw.SendJSONResponse(http.StatusInternalServerError, Response{
+							Success: false,
+							Error: &ErrorDetails{
+								Message: "Failed to update user: " + err.Error(),
+							},
+						})
+						return
+					}
+				}
+			} else {
 				crw.SendJSONResponse(http.StatusInternalServerError, Response{
 					Success: false,
 					Error: &ErrorDetails{
-						Message: "Failed to delete existing user: " + err.Error(),
+						Message: "Failed to select users: " + err.Error(),
 					},
 				})
-			}
-
-			if _, _, err := client.From(constants.USER_TABLE).Insert(user, false, "", "", "exact").Execute(); err != nil {
-				crw.SendJSONResponse(http.StatusInternalServerError, Response{
-					Success: false,
-					Error: &ErrorDetails{
-						Message: "Failed to create user: " + err.Error(),
-					},
-				})
-				fmt.Println(err)
 				return
 			}
 
 			var priceID string
 			if user.Membership == "Semester" {
-				priceID = "price_1Pkp2WRuQxKvYvnuBdqcFUcm"
+				priceID = "price_1Pkp2WRuQxKvYvnuBdqcFUcm" // stripe id for semester
 			} else {
-				priceID = "price_1Pkp2WRuQxKvYvnu0GLPeuEE"
+				priceID = "price_1Pkp2WRuQxKvYvnu0GLPeuEE" // stripe id for yearly
 			}
 
 			stripe.Key = os.Getenv("STRIPE_SK")
