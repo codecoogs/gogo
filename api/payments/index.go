@@ -2,11 +2,12 @@ package payments
 
 import (
 	"encoding/json"
-	"github.com/codecoogs/gogo/wrappers/http"
-	"github.com/codecoogs/gogo/wrappers/supabase"
-	"github.com/codecoogs/gogo/constants"
-	"github.com/google/uuid"
 	"net/http"
+
+	"github.com/codecoogs/gogo/constants"
+	codecoogshttp "github.com/codecoogs/gogo/wrappers/http"
+	codecoogssupabase "github.com/codecoogs/gogo/wrappers/supabase"
+	"github.com/google/uuid"
 )
 
 type Payment struct {

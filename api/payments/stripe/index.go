@@ -10,6 +10,7 @@ import (
 
 	"github.com/codecoogs/gogo/constants"
 	codecoogssupabase "github.com/codecoogs/gogo/wrappers/supabase"
+	codecoogsemail "github.com/codecoogs/gogo/wrappers/email"
 	"github.com/google/uuid"
 
 	"github.com/stripe/stripe-go/v79"
@@ -50,7 +51,7 @@ func Handler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// fmt.Println("testing!")
+	fmt.Println("testing!")
 
 	event := stripe.Event{}
 
@@ -95,6 +96,8 @@ func Handler(w http.ResponseWriter, req *http.Request) {
 		}
 
 		log.Printf("Successfully updated paid status for %s.", checkoutSession.CustomerEmail)
+
+		codecoogsemail.SendEmail(checkoutSession.CustomerEmail, "Semester")
 
 		// fmt.Println(checkoutSession.Metadata)
 

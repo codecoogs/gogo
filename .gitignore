@@ -3,3 +3,4 @@
 .idea
 .env
 node_modules
+credentials.json
