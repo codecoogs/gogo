@@ -49,12 +49,12 @@ type User struct {
 	ExpectedGraduation string     `json:"expected_graduation"`
 	Membership         string     `json:"membership"`
 
-  Paid        bool `json:"paid"`
+	Paid        bool `json:"paid"`
 	ShirtBought bool `json:"shirt-bought"`
 
 	Created SupabaseTime `json:"created"`
 	Updated SupabaseTime `json:"updated"`
-  
+
 	Discord string     `json:"discord"`
 	Team    *uuid.UUID `json:"team"`
 	Points  int        `json:"points"`
@@ -173,9 +173,9 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 
 			var priceID string
 			if user.Membership == "Semester" {
-				priceID = "price_1Pkp2WRuQxKvYvnuBdqcFUcm" // stripe id for semester
+				priceID = "price_1S0vgqRuQxKvYvnuVBHgkIip" // stripe id for semester
 			} else {
-        priceID = "price_1Pkp2WRuQxKvYvnu0GLPeuEE" // stripe id for yearly
+				priceID = "price_1S0vgqRuQxKvYvnusQgsCBSb" // stripe id for yearly
 			}
 
 			stripe.Key = os.Getenv("STRIPE_SK")
