@@ -50,8 +50,6 @@ func Handler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// fmt.Println("testing!")
-
 	event := stripe.Event{}
 
 	if err := json.Unmarshal(payload, &event); err != nil {
