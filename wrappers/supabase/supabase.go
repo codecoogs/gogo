@@ -21,7 +21,7 @@ func CreateClient() (*supabase.Client, error) {
 	// fmt.Println(supabaseUrl)
 	// fmt.Println(supabaseKey)
 
-	client, err := supabase.NewClient("https://hbhahqephsndzjtqdzin.supabase.co", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhiaGFocWVwaHNuZHpqdHFkemluIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTcwMDUyNjI1OCwiZXhwIjoyMDE2MTAyMjU4fQ._UGTH-ZWQ5Ho0SoUBf81TR93T6iYcHG3tBLaxnQiReA", nil)
+	client, err := supabase.NewClient("https://hbhahqephsndzjtqdzin.supabase.co", supabaseKey, nil)
 
 	return client, err
 }
