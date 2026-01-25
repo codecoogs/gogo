@@ -97,6 +97,45 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 				Success: true,
 				Data:    todo,
 			})
+		case "PATCH":
+			// Handle updating just the completed status
+			var todoStatus struct {
+				Completed bool `json:"completed"`
+			}
+			if err := json.NewDecoder(r.Body).Decode(&todoStatus); err != nil {
+				crw.SendJSONResponse(http.StatusBadRequest, Response{
+					Success: false,
+					Error: &ErrorDetails{
+						Message: "Invalid request body: " + err.Error(),
+					},
+				})
+				return
+			}
+
+			count, err := updateTodoStatus(client, id, todoStatus.Completed)
+			if err != nil {
+				crw.SendJSONResponse(http.StatusInternalServerError, Response{
+					Success: false,
+					Error: &ErrorDetails{
+						Message: "Failed to update todo status: " + err.Error(),
+					},
+				})
+				return
+			}
+
+			if count == 0 {
+				crw.SendJSONResponse(http.StatusBadRequest, Response{
+					Success: false,
+					Error: &ErrorDetails{
+						Message: "Todo not found",
+					},
+				})
+				return
+			}
+
+			crw.SendJSONResponse(http.StatusOK, Response{
+				Success: true,
+			})
 		case "PUT":
 			var updatedTodo Todo
 			if err := json.NewDecoder(r.Body).Decode(&updatedTodo); err != nil {
@@ -226,4 +265,15 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 			})
 		}
 	}
+}
+
+func updateTodoStatus(client *supabase.Client, id string, completed bool) (int64, error) {
+	todoStatus := map[string]interface{}{
+		"completed": completed,
+	}
+	_, count, err := client.From(constants.TODO_TABLE).Update(todoStatus, "", "exact").Eq("id", id).Execute()
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
 }
