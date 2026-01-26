@@ -79,10 +79,9 @@ type ActiveMember struct {
 }
 
 type PaymentWithDate struct {
-	ID         *uuid.UUID `json:"id,omitempty"`
-	Payer      uuid.UUID  `json:"payer"`
-	Created    string     `json:"created"`
-	Expiration *string    `json:"expiration,omitempty"`
+	ID        *uuid.UUID `json:"id,omitempty"`
+	UserID    uuid.UUID  `json:"user_id"`
+	CreatedAt string     `json:"created_at"`
 }
 
 type UserQuery struct {
@@ -384,43 +383,29 @@ func getActiveMembers(client *supabase.Client) ([]ActiveMember, error) {
 	// Get all payments to find most recent payment for each user
 	var allPayments []PaymentWithDate
 	_, err = client.From(constants.PAYMENT_TABLE).
-		Select("id, payer, created, expiration", "exact", false).
+		Select("id, user_id, created_at", "exact", false).
 		ExecuteTo(&allPayments)
 	if err != nil {
-		// If payments table doesn't have created field, try without it
-		_, err = client.From(constants.PAYMENT_TABLE).
-			Select("id, payer, expiration", "exact", false).
-			ExecuteTo(&allPayments)
-		if err != nil {
-			return nil, fmt.Errorf("failed to fetch payments: %w", err)
-		}
+		return nil, fmt.Errorf("failed to fetch payments: %w", err)
 	}
 
 	// Create a map of user ID to most recent payment date
 	userPaymentMap := make(map[uuid.UUID]time.Time)
 	for _, payment := range allPayments {
-		var paymentDate time.Time
-		var err error
+		// Parse the created_at timestamp
+		if payment.CreatedAt == "" {
+			continue
+		}
 
-		// Try to use created field first, then expiration, then skip if neither works
-		if payment.Created != "" {
-			paymentDate, err = parsePaymentDate(payment.Created)
-			if err != nil {
-				continue
-			}
-		} else if payment.Expiration != nil && *payment.Expiration != "" {
-			// If expiration exists, it might be the payment date
-			paymentDate, err = parsePaymentDate(*payment.Expiration)
-			if err != nil {
-				continue
-			}
-		} else {
+		paymentDate, err := parsePaymentDate(payment.CreatedAt)
+		if err != nil {
+			// Skip payments where we can't parse the date
 			continue
 		}
 
 		// Keep the most recent payment date for each user
-		if existingDate, exists := userPaymentMap[payment.Payer]; !exists || paymentDate.After(existingDate) {
-			userPaymentMap[payment.Payer] = paymentDate
+		if existingDate, exists := userPaymentMap[payment.UserID]; !exists || paymentDate.After(existingDate) {
+			userPaymentMap[payment.UserID] = paymentDate
 		}
 	}
 
@@ -484,18 +469,24 @@ func getActiveMembers(client *supabase.Client) ([]ActiveMember, error) {
 }
 
 func parsePaymentDate(dateStr string) (time.Time, error) {
-	// Try different date formats that Supabase might use
+	// Try different date formats that Supabase/PostgreSQL might use
 	formats := []string{
-		"2006-01-02T15:04:05.999999",
+		time.RFC3339Nano, // "2006-01-02T15:04:05.999999999Z07:00"
+		time.RFC3339,     // "2006-01-02T15:04:05Z07:00"
+		"2006-01-02T15:04:05.999999999Z",
 		"2006-01-02T15:04:05.999999Z",
+		"2006-01-02T15:04:05.999999+00:00",
+		"2006-01-02T15:04:05.999999+00",
+		"2006-01-02T15:04:05.999999",
 		"2006-01-02T15:04:05Z",
+		"2006-01-02T15:04:05+00:00",
+		"2006-01-02T15:04:05+00",
 		"2006-01-02T15:04:05",
-		time.RFC3339,
-		time.RFC3339Nano,
 	}
 
+	dateStr = strings.TrimSpace(dateStr)
 	for _, format := range formats {
-		if t, err := time.Parse(format, strings.TrimSpace(dateStr)); err == nil {
+		if t, err := time.Parse(format, dateStr); err == nil {
 			return t.UTC(), nil
 		}
 	}
