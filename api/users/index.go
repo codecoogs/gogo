@@ -56,9 +56,7 @@ type User struct {
 	Created SupabaseTime `json:"created"`
 	Updated SupabaseTime `json:"updated"`
 
-	Discord string     `json:"discord"`
-	Team    *uuid.UUID `json:"team"`
-	Points  int        `json:"points"`
+	Discord string `json:"discord"`
 }
 
 type ActiveMember struct {
@@ -70,12 +68,27 @@ type ActiveMember struct {
 	Major              string     `json:"major"`
 	Classification     string     `json:"classification"`
 	ExpectedGraduation string     `json:"expected_graduation"`
-	Membership         string     `json:"membership"`
-	Discord            string     `json:"discord"`
-	Team               *uuid.UUID `json:"team"`
-	Points             int        `json:"points"`
-	DueDate            string     `json:"due_date"`
-	LastPaymentDate    string     `json:"last_payment_date,omitempty"`
+	Membership         string `json:"membership"`
+	Discord            string `json:"discord"`
+	DueDate            string `json:"due_date"`
+	LastPaymentDate    string `json:"last_payment_date,omitempty"`
+}
+
+// UserWithPaymentInfo returns all users with last payment date, next due date, and paid status
+type UserWithPaymentInfo struct {
+	ID                 *uuid.UUID `json:"id,omitempty"`
+	FirstName          string     `json:"first_name"`
+	LastName           string     `json:"last_name"`
+	Email              string     `json:"email"`
+	Phone              string     `json:"phone"`
+	Major              string     `json:"major"`
+	Classification     string     `json:"classification"`
+	ExpectedGraduation string     `json:"expected_graduation"`
+	Membership        string `json:"membership"`
+	Discord           string `json:"discord"`
+	Paid              bool   `json:"paid"`
+	LastPaymentDate   string `json:"last_payment_date,omitempty"`
+	NextDueDate       string `json:"next_due_date,omitempty"`
 }
 
 type PaymentWithDate struct {
@@ -93,20 +106,19 @@ type UserQuery struct {
 	Major              string     `json:"major"`
 	Classification     string     `json:"classification"`
 	ExpectedGraduation string     `json:"expected_graduation"`
-	Membership         string     `json:"membership"`
-	Paid               bool       `json:"paid"`
-	Discord            string     `json:"discord"`
-	Team               *uuid.UUID `json:"team"`
-	Points             int        `json:"points"`
-	Updated            string     `json:"updated"`
+	Membership string `json:"membership"`
+	Paid       bool   `json:"paid"`
+	Discord    string `json:"discord"`
+	Updated    string `json:"updated"`
 }
 
 type Response struct {
-	Success   bool            `json:"success"`
-	StripeURL string          `json:"url"`
-	Data      []User          `json:"data,omitempty"`
-	ActiveMembers []ActiveMember `json:"active_members,omitempty"`
-	Error     *ErrorDetails   `json:"error,omitempty"`
+	Success           bool                  `json:"success"`
+	StripeURL         string                `json:"url"`
+	Data              []User                `json:"data,omitempty"`
+	ActiveMembers     []ActiveMember        `json:"active_members,omitempty"`
+	UsersPaymentInfo  []UserWithPaymentInfo `json:"users_payment_info,omitempty"`
+	Error             *ErrorDetails         `json:"error,omitempty"`
 }
 
 type ErrorDetails struct {
@@ -130,10 +142,30 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 
 	id := r.URL.Query().Get("id")
 	activeMemberships := r.URL.Query().Get("active_memberships")
+	paymentInfo := r.URL.Query().Get("payment_info")
 
 	if id == "" {
 		switch r.Method {
 		case "GET":
+			// Handle all users with payment info (last payment, next due, paid status)
+			if paymentInfo == "true" {
+				usersWithPaymentInfo, err := getAllUsersWithPaymentInfo(client)
+				if err != nil {
+					crw.SendJSONResponse(http.StatusInternalServerError, Response{
+						Success: false,
+						Error: &ErrorDetails{
+							Message: "Failed to get users with payment info: " + err.Error(),
+						},
+					})
+					return
+				}
+
+				crw.SendJSONResponse(http.StatusOK, Response{
+					Success:          true,
+					UsersPaymentInfo: usersWithPaymentInfo,
+				})
+				return
+			}
 			// Handle active memberships query
 			if activeMemberships == "true" {
 				activeMembers, err := getActiveMembers(client)
@@ -157,7 +189,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 			crw.SendJSONResponse(http.StatusMethodNotAllowed, Response{
 				Success: false,
 				Error: &ErrorDetails{
-					Message: "Method not allowed. Use ?active_memberships=true to get active members.",
+					Message: "Method not allowed. Use ?active_memberships=true to get active members, or ?payment_info=true to get all users with payment/due dates.",
 				},
 			})
 		case "POST":
@@ -369,7 +401,7 @@ func getActiveMembers(client *supabase.Client) ([]ActiveMember, error) {
 	// Get all users with Yearly or Semester membership
 	var allUsers []UserQuery
 	_, err := client.From(constants.USER_TABLE).
-		Select("id, first_name, last_name, email, phone, major, classification, expected_graduation, membership, paid, discord, team, points, updated", "exact", false).
+		Select("id, first_name, last_name, email, phone, major, classification, expected_graduation, membership, paid, discord, updated", "exact", false).
 		In("membership", []string{"Yearly", "Semester"}).
 		ExecuteTo(&allUsers)
 	if err != nil {
@@ -456,8 +488,6 @@ func getActiveMembers(client *supabase.Client) ([]ActiveMember, error) {
 				ExpectedGraduation: user.ExpectedGraduation,
 				Membership:         user.Membership,
 				Discord:            user.Discord,
-				Team:               user.Team,
-				Points:             user.Points,
 				DueDate:            dueDate.Format(time.RFC3339),
 				LastPaymentDate:    lastPaymentDate.Format(time.RFC3339),
 			}
@@ -466,6 +496,89 @@ func getActiveMembers(client *supabase.Client) ([]ActiveMember, error) {
 	}
 
 	return activeMembers, nil
+}
+
+// getAllUsersWithPaymentInfo returns all users with last payment date, next due date (for Yearly/Semester), and paid status
+func getAllUsersWithPaymentInfo(client *supabase.Client) ([]UserWithPaymentInfo, error) {
+	var allUsers []UserQuery
+	_, err := client.From(constants.USER_TABLE).
+		Select("id, first_name, last_name, email, phone, major, classification, expected_graduation, membership, paid, discord, updated", "exact", false).
+		ExecuteTo(&allUsers)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch users: %w", err)
+	}
+
+	if len(allUsers) == 0 {
+		return []UserWithPaymentInfo{}, nil
+	}
+
+	var allPayments []PaymentWithDate
+	_, err = client.From(constants.PAYMENT_TABLE).
+		Select("id, user_id, created_at", "exact", false).
+		ExecuteTo(&allPayments)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch payments: %w", err)
+	}
+
+	userPaymentMap := make(map[uuid.UUID]time.Time)
+	for _, payment := range allPayments {
+		if payment.CreatedAt == "" {
+			continue
+		}
+		paymentDate, err := parsePaymentDate(payment.CreatedAt)
+		if err != nil {
+			continue
+		}
+		if existingDate, exists := userPaymentMap[payment.UserID]; !exists || paymentDate.After(existingDate) {
+			userPaymentMap[payment.UserID] = paymentDate
+		}
+	}
+
+	var result []UserWithPaymentInfo
+	for _, user := range allUsers {
+		if user.ID == nil {
+			continue
+		}
+
+		lastPaymentDate, hasPayment := userPaymentMap[*user.ID]
+		if !hasPayment && user.Paid {
+			updatedTime, err := parsePaymentDate(user.Updated)
+			if err == nil {
+				lastPaymentDate = updatedTime
+				hasPayment = true
+			}
+		}
+
+		lastPaymentStr := ""
+		if hasPayment {
+			lastPaymentStr = lastPaymentDate.Format(time.RFC3339)
+		}
+
+		nextDueStr := ""
+		if user.Membership == "Yearly" && hasPayment {
+			nextDueStr = lastPaymentDate.AddDate(1, 0, 0).Format(time.RFC3339)
+		} else if user.Membership == "Semester" && hasPayment {
+			nextDueStr = lastPaymentDate.AddDate(0, 6, 0).Format(time.RFC3339)
+		}
+
+		result = append(result, UserWithPaymentInfo{
+			ID:                 user.ID,
+			FirstName:          user.FirstName,
+			LastName:           user.LastName,
+			Email:              user.Email,
+			Phone:              user.Phone,
+			Major:              user.Major,
+			Classification:     user.Classification,
+			ExpectedGraduation: user.ExpectedGraduation,
+			Membership:         user.Membership,
+			Discord:            user.Discord,
+			Paid:               user.Paid,
+			LastPaymentDate:    lastPaymentStr,
+			NextDueDate:        nextDueStr,
+		})
+	}
+
+	return result, nil
 }
 
 func parsePaymentDate(dateStr string) (time.Time, error) {
