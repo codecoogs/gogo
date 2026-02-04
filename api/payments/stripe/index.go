@@ -28,10 +28,7 @@ type User struct {
 	ExpectedGraduation string     `json:"expected_graduation"`
 	Membership         string     `json:"membership"`
 	Paid               bool       `json:"paid"`
-
-	Discord *string    `json:"discord"`
-	Team    *uuid.UUID `json:"team"`
-	Points  int        `json:"points"`
+	Discord            *string    `json:"discord"`
 }
 
 func Handler(w http.ResponseWriter, req *http.Request) {
