@@ -44,7 +44,7 @@ type User struct {
 	LastName           string     `json:"last_name"`
 	Email              string     `json:"email"`
 	Phone              string     `json:"phone"`
-	Password           string     `json:"password"`
+	AuthID             string     `json:"auth_id"`
 	Major              string     `json:"major"`
 	Classification     string     `json:"classification"`
 	ExpectedGraduation string     `json:"expected_graduation"`
