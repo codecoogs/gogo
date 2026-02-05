@@ -334,13 +334,30 @@ func getPointCategories(client *supabase.Client) ([]PointCategory, error) {
 	return cats, nil
 }
 
+// getUserPointTransactions returns point_transactions for the user identified by id, email, or discord.
+// We explicitly join users and point_transactions: first resolve the user from users by the given
+// identifier (id, email, or discord), then fetch only transactions where point_transactions.user_id
+// equals that user's id. This ensures we never return transactions for a different user when
+// looking up by email or discord.
 func getUserPointTransactions(client *supabase.Client, column string, value string) ([]PointTransaction, error) {
+	// Step 1: Resolve user from users table by the provided identifier (id, email, or discord).
+	// This is the "join" condition: we only consider the single user that matches.
+	if column != "id" && column != "email" && column != "discord" {
+		return nil, nil
+	}
 	userID, _, _, err := getUserIDAndName(client, column, value)
-	if err != nil || userID == nil {
+	if err != nil {
 		return nil, err
 	}
+	if userID == nil {
+		return nil, nil
+	}
+	// Step 2: Get point_transactions only for this user (join on user_id = users.id).
 	var txns []PointTransaction
-	_, err = client.From(constants.POINT_TRANSACTIONS_TABLE).Select("id, user_id, category_id, event_id, points_earned, created_at, created_by, academic_year_id", "exact", false).Eq("user_id", userID.String()).ExecuteTo(&txns)
+	_, err = client.From(constants.POINT_TRANSACTIONS_TABLE).
+		Select("id, user_id, category_id, event_id, points_earned, created_at, created_by, academic_year_id", "exact", false).
+		Eq("user_id", userID.String()).
+		ExecuteTo(&txns)
 	if err != nil {
 		return nil, err
 	}
