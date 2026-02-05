@@ -25,10 +25,32 @@ type PointsRow struct {
 	CreatedAt string     `json:"created_at"`
 }
 
+// PointTransaction matches point_transactions table
+type PointTransaction struct {
+	ID             *uuid.UUID `json:"id,omitempty"`
+	UserID         *uuid.UUID `json:"user_id,omitempty"`
+	CategoryID     *uuid.UUID `json:"category_id,omitempty"`
+	EventID        *int64     `json:"event_id,omitempty"`
+	PointsEarned   *int       `json:"points_earned,omitempty"`
+	CreatedAt      string     `json:"created_at,omitempty"`
+	CreatedBy      *uuid.UUID `json:"created_by,omitempty"`
+	AcademicYearID *uuid.UUID `json:"academic_year_id,omitempty"`
+}
+
+// PointCategory matches point_categories table
+type PointCategory struct {
+	ID          *uuid.UUID `json:"id,omitempty"`
+	Name        string     `json:"name"`
+	PointsValue int        `json:"points_value"`
+	Description *string    `json:"description,omitempty"`
+}
+
 type Response struct {
-	Success bool        `json:"success"`
-	Data    *UserPoints `json:"data,omitempty"`
-	Error   *ErrorDetails `json:"error,omitempty"`
+	Success            bool               `json:"success"`
+	Data               *UserPoints        `json:"data,omitempty"`
+	PointTransactions  []PointTransaction `json:"point_transactions,omitempty"`
+	PointCategories    []PointCategory    `json:"point_categories,omitempty"`
+	Error              *ErrorDetails      `json:"error,omitempty"`
 }
 
 type ErrorDetails struct {
@@ -53,46 +75,96 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Query().Get("id")
 	email := r.URL.Query().Get("email")
 	discordId := r.URL.Query().Get("discordId")
+	categories := r.URL.Query().Get("categories")
+	transactions := r.URL.Query().Get("transactions")
 
 	column, value := getColumnAndValue(id, email, discordId)
-	if column == "" && value == "" {
-		crw.SendJSONResponse(http.StatusBadRequest, Response{
-			Success: false,
-			Error: &ErrorDetails{
-				Message: "Provide either 'id', 'email' or 'discordId' as a parameter",
-			},
-		})
-		return
-	}
 
 	switch r.Method {
 	case "GET":
+		// GET point categories (no user id required)
+		if categories == "true" {
+			cats, err := getPointCategories(client)
+			if err != nil {
+				crw.SendJSONResponse(http.StatusInternalServerError, Response{
+					Success: false,
+					Error:   &ErrorDetails{Message: err.Error()},
+				})
+				return
+			}
+			crw.SendJSONResponse(http.StatusOK, Response{
+				Success:         true,
+				PointCategories: cats,
+			})
+			return
+		}
+
+		// GET user's point transactions (requires id, email, or discordId)
+		if transactions == "true" {
+			if column == "" || value == "" {
+				crw.SendJSONResponse(http.StatusBadRequest, Response{
+					Success: false,
+					Error:   &ErrorDetails{Message: "Provide 'id', 'email', or 'discordId' to get point transactions."},
+				})
+				return
+			}
+			txns, err := getUserPointTransactions(client, column, value)
+			if err != nil {
+				crw.SendJSONResponse(http.StatusInternalServerError, Response{
+					Success: false,
+					Error:   &ErrorDetails{Message: err.Error()},
+				})
+				return
+			}
+			if txns == nil {
+				crw.SendJSONResponse(http.StatusBadRequest, Response{
+					Success: false,
+					Error:   &ErrorDetails{Message: "User not found."},
+				})
+				return
+			}
+			crw.SendJSONResponse(http.StatusOK, Response{
+				Success:           true,
+				PointTransactions: txns,
+			})
+			return
+		}
+
+		// GET user name + total points (existing behavior)
+		if column == "" || value == "" {
+			crw.SendJSONResponse(http.StatusBadRequest, Response{
+				Success: false,
+				Error:   &ErrorDetails{Message: "Provide either 'id', 'email' or 'discordId' as a parameter."},
+			})
+			return
+		}
 		userPoints, err := getNameAndPointsByColumn(client, column, value)
 		if err != nil {
 			crw.SendJSONResponse(http.StatusInternalServerError, Response{
 				Success: false,
-				Error: &ErrorDetails{
-					Message: err.Error(),
-				},
+				Error:   &ErrorDetails{Message: err.Error()},
 			})
 			return
 		}
-
 		if userPoints == nil {
 			crw.SendJSONResponse(http.StatusBadRequest, Response{
 				Success: false,
-				Error: &ErrorDetails{
-					Message: "User not found",
-				},
+				Error:   &ErrorDetails{Message: "User not found"},
 			})
 			return
 		}
-
 		crw.SendJSONResponse(http.StatusOK, Response{
 			Success: true,
 			Data:    userPoints,
 		})
 	case "PATCH":
+		if column == "" || value == "" {
+			crw.SendJSONResponse(http.StatusBadRequest, Response{
+				Success: false,
+				Error:   &ErrorDetails{Message: "Provide either 'id', 'email' or 'discordId' as a parameter."},
+			})
+			return
+		}
 		var updatedUserPoints UserPoints
 		if err := json.NewDecoder(r.Body).Decode(&updatedUserPoints); err != nil {
 			crw.SendJSONResponse(http.StatusBadRequest, Response{
@@ -248,4 +320,32 @@ func updateUserPoints(client *supabase.Client, column string, value string, poin
 		return 0, err
 	}
 	return 1, nil
+}
+
+func getPointCategories(client *supabase.Client) ([]PointCategory, error) {
+	var cats []PointCategory
+	_, err := client.From(constants.POINT_CATEGORIES_TABLE).Select("id, name, points_value, description", "exact", false).ExecuteTo(&cats)
+	if err != nil {
+		return nil, err
+	}
+	if cats == nil {
+		return []PointCategory{}, nil
+	}
+	return cats, nil
+}
+
+func getUserPointTransactions(client *supabase.Client, column string, value string) ([]PointTransaction, error) {
+	userID, _, _, err := getUserIDAndName(client, column, value)
+	if err != nil || userID == nil {
+		return nil, err
+	}
+	var txns []PointTransaction
+	_, err = client.From(constants.POINT_TRANSACTIONS_TABLE).Select("id, user_id, category_id, event_id, points_earned, created_at, created_by, academic_year_id", "exact", false).Eq("user_id", userID.String()).ExecuteTo(&txns)
+	if err != nil {
+		return nil, err
+	}
+	if txns == nil {
+		return []PointTransaction{}, nil
+	}
+	return txns, nil
 }
