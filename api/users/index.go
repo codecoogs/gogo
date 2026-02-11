@@ -228,7 +228,22 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 					user.Created = SupabaseTime(time.Now().UTC())
 					user.Updated = SupabaseTime(time.Now().UTC())
 
-					if _, _, err := client.From(constants.USER_TABLE).Insert(user, false, "", "", "exact").Execute(); err != nil {
+					// Insert only fields we set; omit auth_id so it defaults to NULL until linked to Supabase Auth
+					insertRow := map[string]interface{}{
+						"first_name":           user.FirstName,
+						"last_name":            user.LastName,
+						"email":                user.Email,
+						"phone":                user.Phone,
+						"major":                user.Major,
+						"classification":       user.Classification,
+						"expected_graduation":  user.ExpectedGraduation,
+						"membership":           user.Membership,
+						"discord":              user.Discord,
+						"created":              user.Created,
+						"updated":              user.Updated,
+					}
+
+					if _, _, err := client.From(constants.USER_TABLE).Insert(insertRow, false, "", "", "exact").Execute(); err != nil {
 						crw.SendJSONResponse(http.StatusInternalServerError, Response{
 							Success: false,
 							Error: &ErrorDetails{
