@@ -18,7 +18,7 @@ type Payment struct {
 	Quantity    int       `json:"quantity"`
 	Description string    `json:"description"`
 	Method      string    `json:"method"`
-	Expiration  *string   `json:"expiration"`
+	Expiration  *string   `json:"	expiration"`
 }
 
 type Response struct {
