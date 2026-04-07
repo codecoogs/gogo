@@ -3,6 +3,7 @@ package users
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -197,6 +198,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 			var existingUsers []User
 
 			if err := r.ParseMultipartForm(32 << 20); err != nil {
+				log.Printf("[api/users POST] parse_multipart_form failed: %v", err)
 				crw.SendJSONResponse(http.StatusBadRequest, Response{
 					Success: false,
 					Error: &ErrorDetails{
@@ -216,14 +218,13 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 			user.Discord = r.FormValue("discord")
 			user.Membership = r.FormValue("membership")
 
+			log.Printf("[api/users POST] signup attempt email=%q membership=%q", user.Email, user.Membership)
+
 			count, err := client.From(constants.USER_TABLE).Select("*", "exact", false).Eq("email", user.Email).ExecuteTo(&existingUsers)
-			fmt.Println(user)
 
 			if err == nil {
-				fmt.Println(count)
-
 				if count == 0 {
-					fmt.Println("Creating new member...")
+					log.Printf("[api/users POST] creating new user email=%q", user.Email)
 
 					user.Created = SupabaseTime(time.Now().UTC())
 					user.Updated = SupabaseTime(time.Now().UTC())
@@ -244,17 +245,17 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 					}
 
 					if _, _, err := client.From(constants.USER_TABLE).Insert(insertRow, false, "", "", "exact").Execute(); err != nil {
+						log.Printf("[api/users POST] insert_user failed email=%q err=%v", user.Email, err)
 						crw.SendJSONResponse(http.StatusInternalServerError, Response{
 							Success: false,
 							Error: &ErrorDetails{
 								Message: "Failed to create user: " + err.Error(),
 							},
 						})
-						fmt.Println(err)
 						return
 					}
 				} else {
-					fmt.Println("Member already exists in database")
+					log.Printf("[api/users POST] updating existing user email=%q", user.Email)
 
 					var existingUser = existingUsers[0]
 
@@ -268,7 +269,20 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 
 					existingUser.Updated = SupabaseTime(time.Now().UTC())
 
-					if _, _, err := client.From(constants.USER_TABLE).Update(existingUser, "", "exact").Eq("email", existingUser.Email).Execute(); err != nil {
+					// Partial update only; do not send full User (avoids auth_id "" invalid for uuid, and avoids overwriting paid/shirt-bought)
+					updateRow := map[string]interface{}{
+						"first_name":          existingUser.FirstName,
+						"last_name":           existingUser.LastName,
+						"phone":               existingUser.Phone,
+						"major":               existingUser.Major,
+						"classification":      existingUser.Classification,
+						"expected_graduation": existingUser.ExpectedGraduation,
+						"discord":             existingUser.Discord,
+						"updated":             existingUser.Updated,
+					}
+
+					if _, _, err := client.From(constants.USER_TABLE).Update(updateRow, "", "exact").Eq("email", existingUser.Email).Execute(); err != nil {
+						log.Printf("[api/users POST] update_user failed email=%q err=%v", existingUser.Email, err)
 						crw.SendJSONResponse(http.StatusInternalServerError, Response{
 							Success: false,
 							Error: &ErrorDetails{
@@ -279,6 +293,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 					}
 				}
 			} else {
+				log.Printf("[api/users POST] select_by_email failed email=%q err=%v", user.Email, err)
 				crw.SendJSONResponse(http.StatusInternalServerError, Response{
 					Success: false,
 					Error: &ErrorDetails{
@@ -296,6 +311,9 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 			}
 
 			stripe.Key = os.Getenv("STRIPE_SK")
+			if stripe.Key == "" {
+				log.Printf("[api/users POST] STRIPE_SK is empty; stripe session will fail email=%q", user.Email)
+			}
 			params := &stripe.CheckoutSessionParams{
 				SuccessURL:       stripe.String("https://www.codecoogs.com/success"),
 				CustomerCreation: stripe.String(string(stripe.CheckoutSessionCustomerCreationAlways)),
@@ -312,8 +330,10 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 				},
 			}
 
+			log.Printf("[api/users POST] creating stripe checkout email=%q price_id=%s", user.Email, priceID)
 			result, err := session.New(params)
 			if err != nil {
+				log.Printf("[api/users POST] stripe_checkout_session failed email=%q price_id=%s err=%v", user.Email, priceID, err)
 				crw.SendJSONResponse(http.StatusInternalServerError, Response{
 					Success: false,
 					Error: &ErrorDetails{
@@ -323,6 +343,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
+			log.Printf("[api/users POST] stripe_checkout_ok email=%q", user.Email)
 			crw.SendJSONResponse(http.StatusOK, Response{
 				Success:   true,
 				StripeURL: result.URL,
