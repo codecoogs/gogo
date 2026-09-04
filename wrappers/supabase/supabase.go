@@ -21,7 +21,7 @@ func CreateClient() (*supabase.Client, error) {
 	// fmt.Println(supabaseUrl)
 	// fmt.Println(supabaseKey)
 
-	client, err := supabase.NewClient("https://hbhahqephsndzjtqdzin.supabase.co", supabaseKey, nil)
+	client, err := supabase.NewClient(supabaseUrl, supabaseKey, nil)
 
 	return client, err
 }
