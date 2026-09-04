@@ -170,6 +170,33 @@ func TestDecodeOpportunity(t *testing.T) {
 
 // A POST that omits is_active/website_viewable must not send them, so the
 // column defaults in the migration apply instead of Go's zero value.
+// The route returns whole rows, so a job-shaped posting must survive decoding
+// with its imported columns intact rather than being silently dropped.
+func TestDecodeOpportunityKeepsJobColumns(t *testing.T) {
+	got, err := decodeOpportunity(strings.NewReader(
+		`{"title":"Backend Intern","link_url":"https://example.com/job/1",
+		  "company_name":"Acme","location":"Houston, TX","employment_type":"Internship",
+		  "salary":"$25/hr","field":"Data Science","source":"csv_import",
+		  "external_id":"linkedin-4821"}`))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	for _, tt := range []struct{ field, got, want string }{
+		{"company_name", got.CompanyName, "Acme"},
+		{"location", got.Location, "Houston, TX"},
+		{"employment_type", got.EmploymentType, "Internship"},
+		{"salary", got.Salary, "$25/hr"},
+		{"field", got.Field, "Data Science"},
+		{"source", got.Source, "csv_import"},
+		{"external_id", got.ExternalID, "linkedin-4821"},
+	} {
+		if tt.got != tt.want {
+			t.Errorf("%s = %q, want %q", tt.field, tt.got, tt.want)
+		}
+	}
+}
+
 func TestDecodeOpportunityOmittedFlagsStayNil(t *testing.T) {
 	got, err := decodeOpportunity(strings.NewReader(
 		`{"title":"Intern","link_url":"https://forms.gle/abc"}`))

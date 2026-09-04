@@ -28,6 +28,13 @@ type Opportunity struct {
 	OpensOn         *string `json:"opens_on,omitempty"`
 	ClosesOn        *string `json:"closes_on,omitempty"`
 	ExpiresAt       *string `json:"expires_at,omitempty"`
+	CompanyName     string  `json:"company_name,omitempty"`
+	Location        string  `json:"location,omitempty"`
+	EmploymentType  string  `json:"employment_type,omitempty"`
+	Salary          string  `json:"salary,omitempty"`
+	Field           string  `json:"field,omitempty"`
+	Source          string  `json:"source,omitempty"`
+	ExternalID      string  `json:"external_id,omitempty"`
 	DisplayOrder    *int    `json:"display_order,omitempty"`
 	WebsiteViewable *bool   `json:"website_viewable,omitempty"`
 	IsActive        *bool   `json:"is_active,omitempty"`
