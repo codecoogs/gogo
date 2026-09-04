@@ -20,7 +20,8 @@ type Opportunity struct {
 	ID              *string `json:"id,omitempty"`
 	Title           string  `json:"title"`
 	Description     string  `json:"description,omitempty"`
-	LinkURL         string  `json:"link_url"`
+	LinkURL         string  `json:"link_url,omitempty"`
+	LinkedFormID    *string `json:"linked_form_id,omitempty"`
 	Category        string  `json:"category,omitempty"`
 	IconURL         string  `json:"icon_url,omitempty"`
 	Term            string  `json:"term,omitempty"`
@@ -82,8 +83,11 @@ func decodeOpportunity(body io.Reader) (Opportunity, error) {
 	if strings.TrimSpace(opportunity.Title) == "" {
 		return opportunity, errors.New("title is required")
 	}
-	if strings.TrimSpace(opportunity.LinkURL) == "" {
-		return opportunity, errors.New("link_url is required")
+
+	hasLink := strings.TrimSpace(opportunity.LinkURL) != ""
+	hasForm := opportunity.LinkedFormID != nil && strings.TrimSpace(*opportunity.LinkedFormID) != ""
+	if hasLink == hasForm {
+		return opportunity, errors.New("exactly one of link_url or linked_form_id is required")
 	}
 
 	return opportunity, nil

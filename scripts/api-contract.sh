@@ -154,9 +154,13 @@ check "POST rejects malformed JSON" 400 \
 check "POST rejects a missing title" 400 \
 	"$(status_of -X POST -H 'Content-Type: application/json' \
 		-d '{"term":"Spring 2026","link_url":"https://forms.gle/abc"}' "$BASE_URL/opportunities")"
-check "POST rejects a missing link_url" 400 \
+check "POST rejects neither link_url nor linked_form_id" 400 \
 	"$(status_of -X POST -H 'Content-Type: application/json' \
 		-d '{"title":"x","term":"Spring 2026"}' "$BASE_URL/opportunities")"
+check "POST rejects both link_url and linked_form_id" 400 \
+	"$(status_of -X POST -H 'Content-Type: application/json' \
+		-d '{"title":"x","link_url":"https://forms.gle/abc","linked_form_id":"c4e11505-5555-42f9-9f48-678a0abf55c6"}' \
+		"$BASE_URL/opportunities")"
 check "POST rejects a whitespace-only title" 400 \
 	"$(status_of -X POST -H 'Content-Type: application/json' \
 		-d '{"title":"  ","link_url":"https://forms.gle/abc"}' "$BASE_URL/opportunities")"

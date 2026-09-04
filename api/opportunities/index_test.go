@@ -124,10 +124,20 @@ func TestDecodeOpportunity(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			// link_url is NOT NULL on the table, so the API rejects it up front
-			// rather than surfacing a Postgres constraint error.
-			name:    "missing link_url",
+			name: "valid with a linked form instead of a link_url",
+			body: `{"title":"Intern","linked_form_id":"c4e11505-5555-42f9-9f48-678a0abf55c6"}`,
+		},
+		{
+			// opportunities_link_target_chk is (link_url IS NOT NULL) <> (linked_form_id
+			// IS NOT NULL), so the API enforces the same XOR up front rather than
+			// surfacing a Postgres constraint violation.
+			name:    "neither link_url nor linked_form_id",
 			body:    `{"title":"Intern","term":"Spring 2026"}`,
+			wantErr: true,
+		},
+		{
+			name:    "both link_url and linked_form_id",
+			body:    `{"title":"Intern","link_url":"https://forms.gle/abc","linked_form_id":"c4e11505-5555-42f9-9f48-678a0abf55c6"}`,
 			wantErr: true,
 		},
 		{
