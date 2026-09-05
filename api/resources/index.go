@@ -144,10 +144,11 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 			var resources []Resource
 			query := applyListFilters(client.From(constants.RESOURCE_TABLE).Select("*", "exact", false), filters)
 			if _, err := query.Order("display_order", MyOrderOpts).ExecuteTo(&resources); err != nil {
-				crw.SendJSONResponse(http.StatusInternalServerError, Response{
+				status, message := codecoogssupabase.ErrorResponse(err, "Failed to get resources")
+				crw.SendJSONResponse(status, Response{
 					Success: false,
 					Error: &ErrorDetails{
-						Message: "Failed to get resources: " + err.Error(),
+						Message: message,
 					},
 				})
 				return
@@ -169,10 +170,11 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 			}
 
 			if _, _, err := client.From(constants.RESOURCE_TABLE).Insert(resource, false, "", "", "exact").Execute(); err != nil {
-				crw.SendJSONResponse(http.StatusInternalServerError, Response{
+				status, message := codecoogssupabase.ErrorResponse(err, "Failed to create resource")
+				crw.SendJSONResponse(status, Response{
 					Success: false,
 					Error: &ErrorDetails{
-						Message: "Failed to create resource: " + err.Error(),
+						Message: message,
 					},
 				})
 				return
@@ -193,10 +195,11 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		case "GET":
 			var resource []Resource
 			if _, err := client.From(constants.RESOURCE_TABLE).Select("*", "exact", false).Eq("id", id).ExecuteTo(&resource); err != nil {
-				crw.SendJSONResponse(http.StatusInternalServerError, Response{
+				status, message := codecoogssupabase.ErrorResponse(err, "Failed to get resource")
+				crw.SendJSONResponse(status, Response{
 					Success: false,
 					Error: &ErrorDetails{
-						Message: "Failed to get resource: " + err.Error(),
+						Message: message,
 					},
 				})
 				return
@@ -218,10 +221,11 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 			}
 
 			if _, _, err := client.From(constants.RESOURCE_TABLE).Update(updatedResource, "", "exact").Eq("id", id).Execute(); err != nil {
-				crw.SendJSONResponse(http.StatusInternalServerError, Response{
+				status, message := codecoogssupabase.ErrorResponse(err, "Failed to update resource")
+				crw.SendJSONResponse(status, Response{
 					Success: false,
 					Error: &ErrorDetails{
-						Message: "Failed to update resource: " + err.Error(),
+						Message: message,
 					},
 				})
 				return
@@ -231,10 +235,11 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 			})
 		case "DELETE":
 			if _, _, err := client.From(constants.RESOURCE_TABLE).Delete("", "exact").Eq("id", id).Execute(); err != nil {
-				crw.SendJSONResponse(http.StatusInternalServerError, Response{
+				status, message := codecoogssupabase.ErrorResponse(err, "Failed to delete resource")
+				crw.SendJSONResponse(status, Response{
 					Success: false,
 					Error: &ErrorDetails{
-						Message: "Failed to delete resource: " + err.Error(),
+						Message: message,
 					},
 				})
 				return

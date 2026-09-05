@@ -149,10 +149,11 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 			var opportunities []Opportunity
 			query := applyListFilters(client.From(constants.OPPORTUNITY_TABLE).Select("*", "exact", false), filters)
 			if _, err := query.Order("display_order", MyOrderOpts).ExecuteTo(&opportunities); err != nil {
-				crw.SendJSONResponse(http.StatusInternalServerError, Response{
+				status, message := codecoogssupabase.ErrorResponse(err, "Failed to get opportunities")
+				crw.SendJSONResponse(status, Response{
 					Success: false,
 					Error: &ErrorDetails{
-						Message: "Failed to get opportunities: " + err.Error(),
+						Message: message,
 					},
 				})
 				return
@@ -174,10 +175,11 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 			}
 
 			if _, _, err := client.From(constants.OPPORTUNITY_TABLE).Insert(opportunity, false, "", "", "exact").Execute(); err != nil {
-				crw.SendJSONResponse(http.StatusInternalServerError, Response{
+				status, message := codecoogssupabase.ErrorResponse(err, "Failed to create opportunity")
+				crw.SendJSONResponse(status, Response{
 					Success: false,
 					Error: &ErrorDetails{
-						Message: "Failed to create opportunity: " + err.Error(),
+						Message: message,
 					},
 				})
 				return
@@ -198,10 +200,11 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		case "GET":
 			var opportunity []Opportunity
 			if _, err := client.From(constants.OPPORTUNITY_TABLE).Select("*", "exact", false).Eq("id", id).ExecuteTo(&opportunity); err != nil {
-				crw.SendJSONResponse(http.StatusInternalServerError, Response{
+				status, message := codecoogssupabase.ErrorResponse(err, "Failed to get opportunity")
+				crw.SendJSONResponse(status, Response{
 					Success: false,
 					Error: &ErrorDetails{
-						Message: "Failed to get opportunity: " + err.Error(),
+						Message: message,
 					},
 				})
 				return
@@ -226,10 +229,11 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 			updatedOpportunity.UpdatedAt = &updatedAt
 
 			if _, _, err := client.From(constants.OPPORTUNITY_TABLE).Update(updatedOpportunity, "", "exact").Eq("id", id).Execute(); err != nil {
-				crw.SendJSONResponse(http.StatusInternalServerError, Response{
+				status, message := codecoogssupabase.ErrorResponse(err, "Failed to update opportunity")
+				crw.SendJSONResponse(status, Response{
 					Success: false,
 					Error: &ErrorDetails{
-						Message: "Failed to update opportunity: " + err.Error(),
+						Message: message,
 					},
 				})
 				return
@@ -239,10 +243,11 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 			})
 		case "DELETE":
 			if _, _, err := client.From(constants.OPPORTUNITY_TABLE).Delete("", "exact").Eq("id", id).Execute(); err != nil {
-				crw.SendJSONResponse(http.StatusInternalServerError, Response{
+				status, message := codecoogssupabase.ErrorResponse(err, "Failed to delete opportunity")
+				crw.SendJSONResponse(status, Response{
 					Success: false,
 					Error: &ErrorDetails{
-						Message: "Failed to delete opportunity: " + err.Error(),
+						Message: message,
 					},
 				})
 				return

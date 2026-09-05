@@ -168,6 +168,33 @@ check "POST rejects a whitespace-only title" 400 \
 check "PATCH on the collection is not allowed" 405 \
 	"$(status_of -X PATCH "$BASE_URL/opportunities")"
 
+# Values the database rejects are the caller's mistake, so they must come back as
+# 4xx without the constraint name attached.
+check "POST rejects a category outside the allowed set" 400 \
+	"$(status_of -X POST -H 'Content-Type: application/json' \
+		-d '{"title":"x","link_url":"https://example.com/x","category":"Nonsense"}' "$BASE_URL/opportunities")"
+check "POST rejects an employment_type outside the allowed set" 400 \
+	"$(status_of -X POST -H 'Content-Type: application/json' \
+		-d '{"title":"x","link_url":"https://example.com/x","employment_type":"Freelance"}' "$BASE_URL/opportunities")"
+check "POST rejects a linked_form_id that does not exist" 400 \
+	"$(status_of -X POST -H 'Content-Type: application/json' \
+		-d '{"title":"x","linked_form_id":"00000000-0000-0000-0000-000000000000"}' "$BASE_URL/opportunities")"
+check "GET rejects a malformed id" 400 \
+	"$(status_of "$BASE_URL/opportunities?id=not-a-uuid")"
+
+constraint_body=$(body_of -X POST -H 'Content-Type: application/json' \
+	-d '{"title":"x","link_url":"https://example.com/x","category":"Nonsense"}' "$BASE_URL/opportunities")
+case "$constraint_body" in
+*constraint* | *relation* | *opportunities_*)
+	printf '  FAIL  %s\n' "rejection message leaks schema detail: $constraint_body"
+	failed=$((failed + 1))
+	;;
+*)
+	printf '  ok    %s\n' "rejection message does not leak schema detail"
+	passed=$((passed + 1))
+	;;
+esac
+
 check "POST creates an opportunity" 200 \
 	"$(status_of -X POST -H 'Content-Type: application/json' \
 		-d "{\"title\":\"$MARKER\",\"link_url\":\"https://forms.gle/abc\",\"category\":\"Club Role\",\"term\":\"Spring 2026\"}" \
