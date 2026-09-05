@@ -33,6 +33,11 @@ type Resource struct {
 	UpdatedBy       *string `json:"updated_by,omitempty"`
 }
 
+// The website refetches the list on every page load, so a short shared cache
+// keeps refreshes off the API without making edits take long to appear. Reads
+// by id are not cached, so admin tools always see their own writes.
+const listCacheSeconds = 300
+
 type listFilters struct {
 	WebsiteViewable *bool
 	IsActive        *bool
@@ -153,6 +158,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 				})
 				return
 			}
+			crw.SetCache(listCacheSeconds)
 			crw.SendJSONResponse(http.StatusOK, Response{
 				Success: true,
 				Data:    resources,

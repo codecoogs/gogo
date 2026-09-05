@@ -67,6 +67,29 @@ check "GET list filtered by website_viewable returns 200" 200 \
 check "GET list filtered by is_active returns 200" 200 \
 	"$(status_of "$BASE_URL/resources?is_active=true")"
 
+# The website refetches on every page load, so the list must be cacheable by the
+# browser and the CDN. Reads by id must not be, or an admin would not see their
+# own edit.
+cache_header() {
+	curl -s -D - -o /dev/null "$@" | tr -d '\r' | sed -n 's/^[Cc]ache-[Cc]ontrol: //p'
+}
+
+contains "GET list is cacheable by the browser" "max-age=300" \
+	"$(cache_header "$BASE_URL/resources?website_viewable=true")"
+contains "GET list is cacheable by the CDN" "s-maxage=300" \
+	"$(cache_header "$BASE_URL/resources?website_viewable=true")"
+
+case "$(cache_header "$BASE_URL/resources?id=00000000-0000-0000-0000-000000000000")" in
+*s-maxage=3* | *max-age=300*)
+	printf '  FAIL  %s\n' "GET by id must not be cached"
+	failed=$((failed + 1))
+	;;
+*)
+	printf '  ok    %s\n' "GET by id is not cached"
+	passed=$((passed + 1))
+	;;
+esac
+
 check "GET rejects non-boolean website_viewable" 400 \
 	"$(status_of "$BASE_URL/resources?website_viewable=yes")"
 check "GET rejects non-boolean is_active" 400 \
