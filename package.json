@@ -5,6 +5,6 @@
         "deploy": "vercel deploy"
     },
     "dependencies": {
-        "vercel": "^37.14.0"
+        "vercel": "^59.11.2"
     }
 }

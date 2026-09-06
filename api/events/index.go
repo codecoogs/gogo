@@ -5,20 +5,18 @@ import (
 	"github.com/codecoogs/gogo/wrappers/http"
 	"github.com/codecoogs/gogo/wrappers/supabase"
 	"github.com/codecoogs/gogo/constants"
-	"github.com/google/uuid"
 	"net/http"
 )
 
 type Event struct {
-	ID          *int       `json:"id,omitempty"`
-	Type        int        `json:"type"`
-	StartTime   string     `json:"start_time"`
-	EndTime     string     `json:"end_time"`
-	Location    string     `json:"location"`
-	Name        string     `json:"name"`
-	Description string     `json:"description"`
-	Points      int        `json:"points"`
-	Leaderboard *uuid.UUID `json:"leaderboard"`
+	ID          *int   `json:"id,omitempty"`
+	Type        int    `json:"type"`
+	StartTime   string `json:"start_time"`
+	EndTime     string `json:"end_time"`
+	Location    string `json:"location"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Points      int    `json:"points"`
 }
 
 type Response struct {
